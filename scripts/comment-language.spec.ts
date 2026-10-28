@@ -21,7 +21,7 @@ test('flags line and block comments written in Portuguese', () => {
 test('ignores Portuguese inside strings, templates, regex and JSX text', () => {
   const source = [
     "const label = 'Não há // nada'",
-    'const header = `para ${label} // sem`',
+    'const header = `para $' + '{label} // sem`',
     'const pattern = /não|sem/u',
     'const view = <Text>// não é comentário</Text>',
   ].join('\n')
