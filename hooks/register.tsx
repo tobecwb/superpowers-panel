@@ -10,7 +10,7 @@ import { type PaneElements, paneView } from './pane'
 import { coalesce, type FsLike, isSuperpowersPath, mergeWatchPaths, scanProject, watchTargets } from './scan'
 import { summarize } from './summary'
 
-// Trocar o shape quando o formato mudar: declina o que uma versão anterior guardou.
+// Bump the shape when the format changes: it discards what a previous version stored.
 const projectAtom = atom({ plugin: 'superpowers-panel', key: 'project' } as const, EMPTY_PROJECT, {
   shape: 'project-1',
 })
@@ -31,9 +31,9 @@ const fsOf = ($: EngineInterface): FsLike => ({
   read: path => $.fs.read(path) as Promise<string>,
 })
 
-// O engine só aceita `$` passado a funções declaradas no topo do arquivo e
-// `update` com o atom escrito no ponto da chamada: o trabalho serializado por
-// `coalesce` só varre e guarda o resultado mais recente; quem pediu grava.
+// The engine only accepts `$` passed to top-level functions and `update` with the
+// atom written at the call site: the work serialized by `coalesce` only scans and
+// keeps the latest result; the caller writes it.
 const scans: { latest?: Project } = {}
 
 const scanLatest = coalesce(async (job: { fs: FsLike; root: string }) => {
@@ -50,7 +50,7 @@ const backfill = async ($: EngineInterface) => {
   const messages = await $.session.messages()
   let live = replay(Array.isArray(messages) ? (messages as readonly MessageLike[]) : [])
   try {
-    // Sessão sem as ferramentas nativas de tarefa: nada a sincronizar, sem aviso.
+    // Session without the native task tools: nothing to sync, no warning.
     const hasTaskList = (await $.tool.list()).some(tool => tool.name === 'TaskList')
     if (hasTaskList) {
       const hookResult = await $.tool.call({ tool: 'TaskList' })
@@ -80,8 +80,8 @@ const initialize = async ($: EngineInterface) => {
 
 const rootOr = ($: EngineInterface, fallback: string): Promise<string> => $.session.root().catch(() => fallback)
 
-// O engine troca a lista dinâmica pelo `watchPaths` que o hook devolve: só
-// juntamos os nossos quando alguém (o engine ou outro hook) já devolve uma.
+// The engine replaces the dynamic list with the `watchPaths` the hook returns: we only
+// merge ours when someone (the engine or another hook) already returns one.
 const withOurWatch = async <R extends object>($: EngineInterface, hookResult: R, root: string): Promise<R> => {
   const existing = (hookResult as { watchPaths?: unknown }).watchPaths
   if (!Array.isArray(existing)) return hookResult
@@ -102,8 +102,8 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Outra sessão mexendo em docs/superpowers (ex.: .tasks.json chegando a 7/7)
-  // só aparece se o engine observar essas pastas e avisar via FileChanged.
+  // Another session touching docs/superpowers (e.g. a .tasks.json reaching 7/7) only
+  // shows up if the engine watches those folders and reports it through FileChanged.
   on('classic.SessionStart', async ($, e, next) => {
     const hookResult = await next(e)
     try {
@@ -113,7 +113,7 @@ export const register: Register = on => {
       debug($, error)
       return hookResult
     }
-  }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia o início
+  }).catch((_$, e, next) => next(e)) // fail open: never blocks session start
 
   on('classic.CwdChanged', async ($, e, next) => {
     const hookResult = await next(e)

@@ -28,7 +28,7 @@ const fakeFs = (files: Record<string, string>, unreadable: string[] = []): FsLik
 
 const SUPERPOWERS_DIR = '/r/docs/superpowers'
 
-test('sem docs/superpowers', async () => {
+test('without docs/superpowers', async () => {
   expect(await scanProject(fakeFs({ '/r/README.md': '' }), '/r', 5)).toEqual({
     specs: [],
     plans: [],
@@ -37,12 +37,12 @@ test('sem docs/superpowers', async () => {
   })
 })
 
-test('docs/superpowers sem specs nem plans', async () => {
+test('docs/superpowers with no specs or plans', async () => {
   const project = await scanProject(fakeFs({ [`${SUPERPOWERS_DIR}/model-routing.json`]: '{}' }), '/r', 5)
   expect(project).toEqual({ specs: [], plans: [], scannedAt: 5, hasSuperpowersDir: true })
 })
 
-test('lê specs, planos e estados do tasks.json', async () => {
+test('reads specs, plans and tasks.json states', async () => {
   const fs = fakeFs(
     {
       [`${SUPERPOWERS_DIR}/specs/2026-01-01-auth-design.md`]: '# a',
@@ -79,7 +79,7 @@ test('isSuperpowersPath', async () => {
   expect(isSuperpowersPath(undefined)).toBe(false)
 })
 
-test('coalesce serializa e junta pedidos', async () => {
+test('coalesce serializes and merges requests', async () => {
   let runs = 0
   let release: () => void = () => {}
   const gate = new Promise<void>(resolve => {
@@ -97,7 +97,7 @@ test('coalesce serializa e junta pedidos', async () => {
   expect(runs).toBe(2)
 })
 
-test('tasks.json maior que 4 MiB é inválido', async () => {
+test('tasks.json larger than 4 MiB is invalid', async () => {
   const big = `{"tasks": [], "pad": "${'x'.repeat(4 * 1024 * 1024 + 1)}"}`
   const project = await scanProject(
     fakeFs({
@@ -111,13 +111,13 @@ test('tasks.json maior que 4 MiB é inválido', async () => {
   expect(project.plans[0]?.tasks).toEqual([])
 })
 
-test('watchTargets: pastas observadas de docs/superpowers', async () => {
+test('watchTargets: watched folders of docs/superpowers', async () => {
   const expected = ['/r/docs/superpowers', '/r/docs/superpowers/specs', '/r/docs/superpowers/plans']
   expect(watchTargets('/r')).toEqual(expected)
   expect(watchTargets('/r/')).toEqual(expected)
 })
 
-test('mergeWatchPaths: existentes primeiro, sem duplicar', async () => {
+test('mergeWatchPaths: existing first, no duplicates', async () => {
   expect(mergeWatchPaths(undefined, ['/a', '/b'])).toEqual(['/a', '/b'])
   expect(mergeWatchPaths(['/x', '/a'], ['/a', '/b'])).toEqual(['/x', '/a', '/b'])
   expect(mergeWatchPaths([], [])).toEqual([])

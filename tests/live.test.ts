@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 
 import { applyEvent, EMPTY_LIVE, extractPlanPath, parsePromptSkill, replay, taskListOf, toolEvent } from '../hooks/live'
 
-test('toolEvent reconhece as ferramentas relevantes', async () => {
+test('toolEvent recognizes the relevant tools', async () => {
   expect(toolEvent('TaskCreate', { subject: 'A' }, { task: { id: '1', subject: 'A' } })).toEqual({
     kind: 'create',
     id: '1',
@@ -27,7 +27,7 @@ test('toolEvent reconhece as ferramentas relevantes', async () => {
   expect(toolEvent('Bash', { command: 'ls' }, {})).toBeUndefined()
 })
 
-test('applyEvent cria, atualiza e remove tarefas', async () => {
+test('applyEvent creates, updates and removes tasks', async () => {
   let live = applyEvent(EMPTY_LIVE, { kind: 'create', id: '1', subject: 'A' })
   live = applyEvent(live, { kind: 'update', id: '1', status: 'in_progress', addBlockedBy: ['0'] })
   expect(live.sessionTasks['1']).toEqual({ id: '1', subject: 'A', status: 'in_progress', blockedBy: ['0'] })
@@ -35,7 +35,7 @@ test('applyEvent cria, atualiza e remove tarefas', async () => {
   expect(live.sessionTasks['1']).toBeUndefined()
 })
 
-test('skill define fase e plano ativo; skill alheia é ignorada', async () => {
+test('skill sets phase and active plan; a foreign skill is ignored', async () => {
   let live = applyEvent(EMPTY_LIVE, {
     kind: 'skill',
     skill: 'superpowers-extended-cc:executing-plans',
@@ -47,13 +47,13 @@ test('skill define fase e plano ativo; skill alheia é ignorada', async () => {
   expect(live.phase).toBe('executing-plans')
 })
 
-test('tocar um .tasks.json define o plano ativo', async () => {
+test('touching a .tasks.json sets the active plan', async () => {
   const live = applyEvent(EMPTY_LIVE, { kind: 'touch', path: '/abs/docs/superpowers/plans/p.md.tasks.json' })
   expect(live.activePlan).toBe('docs/superpowers/plans/p.md')
   expect(applyEvent(EMPTY_LIVE, { kind: 'touch', path: '/abs/src/a.ts' })).toEqual(EMPTY_LIVE)
 })
 
-test('snapshot substitui as tarefas da sessão', async () => {
+test('snapshot replaces the session tasks', async () => {
   const before = applyEvent(EMPTY_LIVE, { kind: 'create', id: '9', subject: 'velha' })
   const live = applyEvent(before, {
     kind: 'snapshot',
@@ -62,14 +62,14 @@ test('snapshot substitui as tarefas da sessão', async () => {
   expect(Object.keys(live.sessionTasks)).toEqual(['1'])
 })
 
-test('taskListOf valida o resultado do TaskList', async () => {
+test('taskListOf validates the TaskList result', async () => {
   expect(taskListOf({ tasks: [{ id: '1', subject: 'A', status: 'pending', blockedBy: [] }] })).toEqual([
     { id: '1', subject: 'A', status: 'pending', blockedBy: [] },
   ])
   expect(taskListOf({})).toBeUndefined()
 })
 
-test('extractPlanPath e parsePromptSkill', async () => {
+test('extractPlanPath and parsePromptSkill', async () => {
   expect(extractPlanPath('rodar `docs/superpowers/plans/x.md` agora')).toBe('docs/superpowers/plans/x.md')
   expect(extractPlanPath('/a/docs/superpowers/plans/x.md.tasks.json')).toBe('docs/superpowers/plans/x.md')
   expect(parsePromptSkill('/superpowers-extended-cc:writing-plans docs/a.md')).toEqual({
@@ -84,7 +84,7 @@ test('extractPlanPath e parsePromptSkill', async () => {
   expect(parsePromptSkill('olá')).toBeUndefined()
 })
 
-test('replay reconstrói tarefas e fase do transcript', async () => {
+test('replay rebuilds tasks and phase from the transcript', async () => {
   const live = replay([
     { role: 'user', text: '<command-name>/superpowers-extended-cc:brainstorming</command-name>', toolUses: [] },
     {
@@ -113,12 +113,12 @@ test('replay reconstrói tarefas e fase do transcript', async () => {
   ])
 })
 
-test('update de id desconhecido sem subject não cria tarefa', async () => {
+test('update of an unknown id without a subject does not create a task', async () => {
   const live = applyEvent(EMPTY_LIVE, { kind: 'update', id: '3', status: 'in_progress', addBlockedBy: [] })
   expect(live.sessionTasks).toEqual({})
 })
 
-test('update de id desconhecido com subject cria a tarefa com esse subject', async () => {
+test('update of an unknown id with a subject creates the task with that subject', async () => {
   const live = applyEvent(EMPTY_LIVE, {
     kind: 'update',
     id: '3',
@@ -129,7 +129,7 @@ test('update de id desconhecido com subject cria a tarefa com esse subject', asy
   expect(live.sessionTasks['3']).toEqual({ id: '3', subject: 'Nova', status: 'in_progress', blockedBy: [] })
 })
 
-test('replay sem result no TaskCreate não vaza #id', async () => {
+test('replay without a result on TaskCreate does not leak #id', async () => {
   const live = replay([
     {
       role: 'assistant',
@@ -148,7 +148,7 @@ test('replay sem result no TaskCreate não vaza #id', async () => {
   expect(Object.values(live.sessionTasks).filter(task => task.subject.startsWith('#'))).toEqual([])
 })
 
-test('replay ignora usos recusados (result em texto)', async () => {
+test('replay ignores denied uses (result as text)', async () => {
   const live = replay([
     {
       role: 'assistant',

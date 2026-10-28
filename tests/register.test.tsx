@@ -1,6 +1,6 @@
 import { expect, type TestBody, test } from 'claude-code/testing'
 
-// O tsconfig não carrega libs de runtime (types: []); o runtime de teste tem setTimeout.
+// The tsconfig loads no runtime libs (types: []); the test runtime does have setTimeout.
 declare const setTimeout: (callback: (...args: never[]) => void, ms: number) => unknown
 
 const ROOT = '/repo'
@@ -92,7 +92,7 @@ const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false,
 
 const settle = () => new Promise(resolve => setTimeout(resolve, 20))
 
-test('abre o pane e mostra os alertas do projeto', async ($, on) => {
+test('opens the pane and shows the project alerts', async ($, on) => {
   const opened = engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -105,7 +105,7 @@ test('abre o pane e mostra os alertas do projeto', async ($, on) => {
   await ui.unmount()
 })
 
-test('execução ao vivo: skill + TaskCreate/TaskUpdate mudam o pane', async ($, on) => {
+test('live run: skill + TaskCreate/TaskUpdate change the pane', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -125,7 +125,7 @@ test('execução ao vivo: skill + TaskCreate/TaskUpdate mudam o pane', async ($,
   await ui.unmount()
 })
 
-test('/sp status e /sp sync', async ($, on) => {
+test('/sp status and /sp sync', async ($, on) => {
   engine(on, { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] })
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -140,7 +140,7 @@ test('/sp status e /sp sync', async ($, on) => {
   expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync')
 })
 
-test('TaskList negado no backfill marca sincronização parcial', async ($, on) => {
+test('TaskList denied during backfill flags a partial sync', async ($, on) => {
   engine(on, 'deny')
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -148,7 +148,7 @@ test('TaskList negado no backfill marca sincronização parcial', async ($, on) 
   expect(status.text).toContain('sincronização parcial')
 })
 
-test('sessão sem a ferramenta TaskList não marca sincronização parcial', async ($, on) => {
+test('session without the TaskList tool does not flag a partial sync', async ($, on) => {
   engine(on, { tasks: [] }, ['Skill', 'Read', 'Write', 'Edit'])
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -156,7 +156,7 @@ test('sessão sem a ferramenta TaskList não marca sincronização parcial', asy
   expect(status.text).not.toContain('sincronização parcial')
 })
 
-test('clicar num plano abre o DETALHE; ✕ fechar o tira', async ($, on) => {
+test('clicking a plan opens DETALHE; ✕ fechar removes it', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -187,14 +187,14 @@ test('clicar num plano abre o DETALHE; ✕ fechar o tira', async ($, on) => {
 
 const OURS = [SUPERPOWERS_DIR, `${SUPERPOWERS_DIR}/specs`, `${SUPERPOWERS_DIR}/plans`]
 
-test('classic.SessionStart observa docs/superpowers e mantém os caminhos de outros', async ($, on) => {
+test('classic.SessionStart watches docs/superpowers and keeps the paths of others', async ($, on) => {
   engine(on)
   on('classic.SessionStart', () => ({ watchPaths: ['/x'] }))
   const result = await $.classic.SessionStart({ source: 'startup' })
   expect(result.watchPaths).toEqual(['/x', ...OURS])
 })
 
-test('classic.FileChanged em docs/superpowers re-varre (outra sessão concluiu o plano)', async ($, on) => {
+test('classic.FileChanged in docs/superpowers rescans (another session finished the plan)', async ($, on) => {
   const files = { ...FILES }
   engine(on, { tasks: [] }, TOOLS, files)
   on('classic.FileChanged', () => ({}))
@@ -213,7 +213,7 @@ test('classic.FileChanged em docs/superpowers re-varre (outra sessão concluiu o
   expect(text).toContain('✓ 1 plano(s) concluído(s)\n  · 2026-10-03-auth.md  ██████████ 3/3')
 })
 
-test('classic.FileChanged fora de docs/superpowers não re-varre', async ($, on) => {
+test('classic.FileChanged outside docs/superpowers does not rescan', async ($, on) => {
   const opened = engine(on)
   on('classic.FileChanged', () => ({}))
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
@@ -224,7 +224,7 @@ test('classic.FileChanged fora de docs/superpowers não re-varre', async ($, on)
   expect(opened.lists()).toBe(before)
 })
 
-test('classic.CwdChanged junta nossos caminhos à lista que outro hook troca', async ($, on) => {
+test('classic.CwdChanged merges our paths into the list another hook replaces', async ($, on) => {
   engine(on)
   on('classic.CwdChanged', () => ({ watchPaths: ['/y'] }) as never)
   const result = (await $.classic.CwdChanged({ old_cwd: '/old', new_cwd: ROOT })) as { watchPaths?: string[] }

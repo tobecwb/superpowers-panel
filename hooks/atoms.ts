@@ -1,7 +1,7 @@
 import type { Project } from '../types'
 
-// Os atoms em si (`atom(...)`) ficam em register.tsx: o engine só aceita
-// `read`/`update` com uma referência declarada no próprio arquivo da chamada.
+// The atoms themselves (`atom(...)`) live in register.tsx: the engine only accepts
+// `read`/`update` with a reference declared in the calling file.
 export const PANE = 'superpowers'
 export const TITLE = 'Superpowers'
 

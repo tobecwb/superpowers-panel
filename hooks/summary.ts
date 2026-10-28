@@ -104,7 +104,7 @@ const specLine = (plan: PlanView): string => {
   return 'Spec: —'
 }
 
-// Cabeçalho, spec e todas as tarefas (concluídas inclusive) de um plano.
+// Header, spec and every task (completed ones included) of a plan.
 export const detailLines = (plan: PlanView): string[] => [
   `${baseName(plan.path)}  ${plan.label ?? progress(plan)}`,
   specLine(plan),

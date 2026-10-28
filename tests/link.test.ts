@@ -25,7 +25,7 @@ const SPECS = [
 ]
 const EMPTY: Live = { sessionTasks: {} }
 
-test('linkPlan usa **Spec:** com ./ ou só o nome, e cai para o slug', async () => {
+test('linkPlan uses **Spec:** with ./ or just the name, and falls back to the slug', async () => {
   expect(linkPlan(plan({ specRef: './docs/superpowers/specs/2026-01-01-auth-design.md' }), SPECS).spec?.slug).toBe(
     'auth',
   )
@@ -35,7 +35,7 @@ test('linkPlan usa **Spec:** com ./ ou só o nome, e cai para o slug', async () 
   expect(linkPlan(plan({ slug: 'zzz' }), SPECS)).toEqual({ specMissing: false })
 })
 
-test('derive classifica os alertas do projeto', async () => {
+test('derive classifies the project alerts', async () => {
   const project: Project = {
     hasSuperpowersDir: true,
     scannedAt: 1,
@@ -56,7 +56,7 @@ test('derive classifica os alertas do projeto', async () => {
   expect(derived.active).toBeUndefined()
 })
 
-test('plano ativo: explícito, senão maior interseção de subjects', async () => {
+test('active plan: explicit, otherwise largest subject intersection', async () => {
   const planA = plan({ path: 'docs/superpowers/plans/a.md', tasks: [task(0, 'pending'), task(1, 'pending')] })
   const planB = plan({ path: 'docs/superpowers/plans/b.md', tasks: [task(5, 'pending')] })
   expect(activePlanPath([planA, planB], { sessionTasks: {}, activePlan: 'docs/superpowers/plans/b.md' })).toBe(
@@ -67,14 +67,14 @@ test('plano ativo: explícito, senão maior interseção de subjects', async () 
   expect(activePlanPath([planA, planB], EMPTY)).toBeUndefined()
 })
 
-test('empate de interseção prefere o plano mais novo', async () => {
+test('an intersection tie prefers the newer plan', async () => {
   const planA = plan({ path: 'docs/superpowers/plans/2026-01-01-a.md', tasks: [task(0, 'pending')] })
   const planB = plan({ path: 'docs/superpowers/plans/2026-02-01-b.md', tasks: [task(0, 'pending')] })
   const live: Live = { sessionTasks: { '7': { id: '7', subject: 'Task 0: T0', status: 'pending', blockedBy: [] } } }
   expect(activePlanPath([planA, planB], live)).toBe('docs/superpowers/plans/2026-02-01-b.md')
 })
 
-test('status nativo prevalece no plano ativo e o resto vai para outside', async () => {
+test('native status wins in the active plan and the rest goes to outside', async () => {
   const project: Project = {
     hasSuperpowersDir: true,
     scannedAt: 1,
@@ -94,7 +94,7 @@ test('status nativo prevalece no plano ativo e o resto vai para outside', async 
   expect(derived.outside.map(t => t.subject)).toEqual(['Revisar spec'])
 })
 
-test('groupTasks separa grupos e ignora dependência inexistente', async () => {
+test('groupTasks splits groups and ignores a nonexistent dependency', async () => {
   const tasks = [task(0, 'completed'), task(1, 'in_progress'), task(2, 'pending', [1]), task(3, 'pending', [99])]
   const groups = groupTasks(tasks)
   expect(groups.running.map(t => t.id)).toEqual([1])

@@ -2,13 +2,13 @@ import { expect, test } from 'claude-code/testing'
 
 import { parseMetadata, parseName, parseSpecRef, parseTasksFile } from '../hooks/parse'
 
-test('parseName extrai data e slug, removendo -design', async () => {
+test('parseName extracts date and slug, dropping -design', async () => {
   expect(parseName('2026-10-28-auth-design.md')).toEqual({ date: '2026-10-28', slug: 'auth' })
   expect(parseName('2026-10-28-auth.md')).toEqual({ date: '2026-10-28', slug: 'auth' })
   expect(parseName('notas.md')).toEqual({ date: '', slug: 'notas' })
 })
 
-test('parseSpecRef lê a linha **Spec:** com ou sem crases', async () => {
+test('parseSpecRef reads the **Spec:** line with or without backticks', async () => {
   expect(parseSpecRef('# P\n\n**Spec:** `docs/superpowers/specs/a-design.md`\n')).toBe(
     'docs/superpowers/specs/a-design.md',
   )
@@ -16,14 +16,14 @@ test('parseSpecRef lê a linha **Spec:** com ou sem crases', async () => {
   expect(parseSpecRef('# Sem spec')).toBeUndefined()
 })
 
-test('parseMetadata lê o bloco json:metadata e tolera JSON quebrado', async () => {
+test('parseMetadata reads the json:metadata block and tolerates broken JSON', async () => {
   const ok = 'x\n\n```json:metadata\n{"userGate": true, "tags": ["a"]}\n```'
   expect(parseMetadata(ok)).toEqual({ userGate: true, tags: ['a'] })
   expect(parseMetadata('```json:metadata\n{quebrado\n```')).toBeUndefined()
   expect(parseMetadata('sem bloco')).toBeUndefined()
 })
 
-test('parseTasksFile lê o formato do fork', async () => {
+test('parseTasksFile reads the fork format', async () => {
   const text = JSON.stringify({
     planPath: 'docs/superpowers/plans/p.md',
     tasks: [
@@ -44,7 +44,7 @@ test('parseTasksFile lê o formato do fork', async () => {
   ])
 })
 
-test('parseTasksFile devolve undefined para JSON inválido ou sem tasks', async () => {
+test('parseTasksFile returns undefined for invalid JSON or no tasks', async () => {
   expect(parseTasksFile('{')).toBeUndefined()
   expect(parseTasksFile('{"x": 1}')).toBeUndefined()
   expect(parseTasksFile('null')).toBeUndefined()

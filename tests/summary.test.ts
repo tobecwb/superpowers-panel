@@ -12,12 +12,12 @@ const planTask = (id: number, status: PlanTask['status'], extra: Partial<PlanTas
   ...extra,
 })
 
-test('displaySubject remove o prefixo Task N:', async () => {
+test('displaySubject strips the Task N: prefix', async () => {
   expect(displaySubject('Task 3: Faz algo')).toBe('Faz algo')
   expect(displaySubject('Livre')).toBe('Livre')
 })
 
-test('taskLine por status', async () => {
+test('taskLine by status', async () => {
   const tasks = [
     planTask(1, 'completed'),
     planTask(8, 'in_progress'),
@@ -36,13 +36,13 @@ test('bar', async () => {
   expect(bar(9, 9)).toBe('██████████')
 })
 
-test('summarize sem dados', async () => {
+test('summarize with no data', async () => {
   const project: Project = { specs: [], plans: [], scannedAt: 0, hasSuperpowersDir: false }
   const live: Live = { sessionTasks: {} }
   expect(summarize(derive(project, live), project, live)).toBe('Nenhum dado superpowers neste projeto.')
 })
 
-test('summarize completo', async () => {
+test('summarize complete', async () => {
   const project: Project = {
     hasSuperpowersDir: true,
     scannedAt: 1,
@@ -85,7 +85,7 @@ test('summarize completo', async () => {
   )
 })
 
-test('summarize: itens do PROJETO com barra; rótulo quando sem tasks.json', async () => {
+test('summarize: PROJETO items with a bar; label when there is no tasks.json', async () => {
   const project: Project = {
     hasSuperpowersDir: true,
     scannedAt: 1,
@@ -113,7 +113,7 @@ test('summarize: itens do PROJETO com barra; rótulo quando sem tasks.json', asy
   expect(text).toContain('✓ 1 plano(s) concluído(s)\n  · 2026-01-02-auth.md  ██████████ 2/2')
 })
 
-test('detailLines: plano ok, spec ausente, sem spec, sem tasks.json', async () => {
+test('detailLines: plan ok, spec missing, no spec, no tasks.json', async () => {
   const project: Project = {
     hasSuperpowersDir: true,
     scannedAt: 1,
