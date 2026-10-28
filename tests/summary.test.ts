@@ -3,7 +3,7 @@ import { derive } from '../hooks/link'
 import { bar, detailLines, displaySubject, projectSections, summarize, taskLine } from '../hooks/summary'
 import type { Live, PlanTask, Project } from '../types'
 
-const t = (id: number, status: PlanTask['status'], extra: Partial<PlanTask> = {}): PlanTask => ({
+const planTask = (id: number, status: PlanTask['status'], extra: Partial<PlanTask> = {}): PlanTask => ({
   id,
   subject: `Task ${id}: Item ${id}`,
   status,
@@ -19,10 +19,10 @@ test('displaySubject remove o prefixo Task N:', async () => {
 
 test('taskLine por status', async () => {
   const tasks = [
-    t(1, 'completed'),
-    t(8, 'in_progress'),
-    t(9, 'pending', { userGate: true }),
-    t(10, 'pending', { blockedBy: [9] }),
+    planTask(1, 'completed'),
+    planTask(8, 'in_progress'),
+    planTask(9, 'pending', { userGate: true }),
+    planTask(10, 'pending', { blockedBy: [9] }),
   ]
   expect(taskLine(tasks[0]!, tasks)).toBe('✓ T1 Item 1')
   expect(taskLine(tasks[1]!, tasks)).toBe('▶ T8 Item 8  em andamento')
@@ -53,7 +53,7 @@ test('summarize completo', async () => {
         slug: 'auth',
         date: '2026-01-02',
         tasksFile: 'ok',
-        tasks: [t(0, 'completed'), t(1, 'in_progress')],
+        tasks: [planTask(0, 'completed'), planTask(1, 'in_progress')],
       },
     ],
   }
@@ -96,7 +96,7 @@ test('summarize: itens do PROJETO com barra; rótulo quando sem tasks.json', asy
         slug: 'auth',
         date: '2026-01-02',
         tasksFile: 'ok',
-        tasks: [t(0, 'completed'), t(1, 'completed')],
+        tasks: [planTask(0, 'completed'), planTask(1, 'completed')],
       },
       {
         path: 'docs/superpowers/plans/2026-01-03-hotfix.md',
@@ -124,7 +124,12 @@ test('detailLines: plano ok, spec ausente, sem spec, sem tasks.json', async () =
         slug: 'auth',
         date: '2026-01-02',
         tasksFile: 'ok',
-        tasks: [t(0, 'completed'), t(1, 'pending'), t(2, 'pending', { blockedBy: [1] }), t(3, 'in_progress')],
+        tasks: [
+          planTask(0, 'completed'),
+          planTask(1, 'pending'),
+          planTask(2, 'pending', { blockedBy: [1] }),
+          planTask(3, 'in_progress'),
+        ],
       },
       {
         path: 'docs/superpowers/plans/2026-01-03-pay.md',
@@ -132,14 +137,14 @@ test('detailLines: plano ok, spec ausente, sem spec, sem tasks.json', async () =
         date: '2026-01-03',
         tasksFile: 'ok',
         specRef: 'docs/superpowers/specs/2026-01-01-pay-design.md',
-        tasks: [t(0, 'completed')],
+        tasks: [planTask(0, 'completed')],
       },
       {
         path: 'docs/superpowers/plans/2026-01-04-misc.md',
         slug: 'misc',
         date: '2026-01-04',
         tasksFile: 'ok',
-        tasks: [t(0, 'pending')],
+        tasks: [planTask(0, 'pending')],
       },
       {
         path: 'docs/superpowers/plans/2026-01-05-hotfix.md',
@@ -181,7 +186,7 @@ test('projectSections lists non-empty sections in display order', async () => {
         slug: 'done',
         date: '2026-01-02',
         tasksFile: 'ok',
-        tasks: [t(0, 'completed')],
+        tasks: [planTask(0, 'completed')],
       },
       {
         path: 'docs/superpowers/plans/2026-01-03-hotfix.md',

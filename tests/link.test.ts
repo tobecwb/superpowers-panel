@@ -47,31 +47,31 @@ test('derive classifica os alertas do projeto', async () => {
       plan({ path: 'docs/superpowers/plans/e.md', slug: 'empty', tasks: [] }),
     ],
   }
-  const d = derive(project, EMPTY)
-  expect(d.specsWithoutPlan.map(s => s.slug)).toEqual(['billing'])
-  expect(d.incomplete.map(p => p.slug)).toEqual(['auth', 'miss', 'empty'])
-  expect(d.incomplete.find(p => p.slug === 'miss')?.label).toBe('sem tasks.json')
-  expect(d.withoutSpec.map(p => p.slug)).toEqual(['hotfix', 'miss', 'empty'])
-  expect(d.complete.map(p => p.slug)).toEqual(['hotfix'])
-  expect(d.active).toBeUndefined()
+  const derived = derive(project, EMPTY)
+  expect(derived.specsWithoutPlan.map(s => s.slug)).toEqual(['billing'])
+  expect(derived.incomplete.map(p => p.slug)).toEqual(['auth', 'miss', 'empty'])
+  expect(derived.incomplete.find(p => p.slug === 'miss')?.label).toBe('sem tasks.json')
+  expect(derived.withoutSpec.map(p => p.slug)).toEqual(['hotfix', 'miss', 'empty'])
+  expect(derived.complete.map(p => p.slug)).toEqual(['hotfix'])
+  expect(derived.active).toBeUndefined()
 })
 
 test('plano ativo: explícito, senão maior interseção de subjects', async () => {
-  const a = plan({ path: 'docs/superpowers/plans/a.md', tasks: [task(0, 'pending'), task(1, 'pending')] })
-  const b = plan({ path: 'docs/superpowers/plans/b.md', tasks: [task(5, 'pending')] })
-  expect(activePlanPath([a, b], { sessionTasks: {}, activePlan: 'docs/superpowers/plans/b.md' })).toBe(
+  const planA = plan({ path: 'docs/superpowers/plans/a.md', tasks: [task(0, 'pending'), task(1, 'pending')] })
+  const planB = plan({ path: 'docs/superpowers/plans/b.md', tasks: [task(5, 'pending')] })
+  expect(activePlanPath([planA, planB], { sessionTasks: {}, activePlan: 'docs/superpowers/plans/b.md' })).toBe(
     'docs/superpowers/plans/b.md',
   )
   const live: Live = { sessionTasks: { '7': { id: '7', subject: 'Task 0: T0', status: 'in_progress', blockedBy: [] } } }
-  expect(activePlanPath([a, b], live)).toBe('docs/superpowers/plans/a.md')
-  expect(activePlanPath([a, b], EMPTY)).toBeUndefined()
+  expect(activePlanPath([planA, planB], live)).toBe('docs/superpowers/plans/a.md')
+  expect(activePlanPath([planA, planB], EMPTY)).toBeUndefined()
 })
 
 test('empate de interseção prefere o plano mais novo', async () => {
-  const a = plan({ path: 'docs/superpowers/plans/2026-01-01-a.md', tasks: [task(0, 'pending')] })
-  const b = plan({ path: 'docs/superpowers/plans/2026-02-01-b.md', tasks: [task(0, 'pending')] })
+  const planA = plan({ path: 'docs/superpowers/plans/2026-01-01-a.md', tasks: [task(0, 'pending')] })
+  const planB = plan({ path: 'docs/superpowers/plans/2026-02-01-b.md', tasks: [task(0, 'pending')] })
   const live: Live = { sessionTasks: { '7': { id: '7', subject: 'Task 0: T0', status: 'pending', blockedBy: [] } } }
-  expect(activePlanPath([a, b], live)).toBe('docs/superpowers/plans/2026-02-01-b.md')
+  expect(activePlanPath([planA, planB], live)).toBe('docs/superpowers/plans/2026-02-01-b.md')
 })
 
 test('status nativo prevalece no plano ativo e o resto vai para outside', async () => {
@@ -88,17 +88,17 @@ test('status nativo prevalece no plano ativo e o resto vai para outside', async 
       '9': { id: '9', subject: 'Revisar spec', status: 'pending', blockedBy: [] },
     },
   }
-  const d = derive(project, live)
-  expect(d.active?.done).toBe(1)
-  expect(d.active?.total).toBe(2)
-  expect(d.outside.map(t => t.subject)).toEqual(['Revisar spec'])
+  const derived = derive(project, live)
+  expect(derived.active?.done).toBe(1)
+  expect(derived.active?.total).toBe(2)
+  expect(derived.outside.map(t => t.subject)).toEqual(['Revisar spec'])
 })
 
 test('groupTasks separa grupos e ignora dependência inexistente', async () => {
   const tasks = [task(0, 'completed'), task(1, 'in_progress'), task(2, 'pending', [1]), task(3, 'pending', [99])]
-  const g = groupTasks(tasks)
-  expect(g.running.map(t => t.id)).toEqual([1])
-  expect(g.blocked.map(t => t.id)).toEqual([2])
-  expect(g.pending.map(t => t.id)).toEqual([3])
-  expect(g.done.map(t => t.id)).toEqual([0])
+  const groups = groupTasks(tasks)
+  expect(groups.running.map(t => t.id)).toEqual([1])
+  expect(groups.blocked.map(t => t.id)).toEqual([2])
+  expect(groups.pending.map(t => t.id)).toEqual([3])
+  expect(groups.done.map(t => t.id)).toEqual([0])
 })

@@ -63,12 +63,12 @@ export const scanProject = async (fs: FsLike, root: string, now: number): Promis
   return { specs, plans, scannedAt: now, hasSuperpowersDir }
 }
 
-export const coalesce = <T>(task: (arg: T) => Promise<void>): ((arg: T) => Promise<void>) => {
+export const coalesce = <T>(task: (input: T) => Promise<void>): ((input: T) => Promise<void>) => {
   let running: Promise<void> | undefined
   let again = false
   let latest: T
-  return arg => {
-    latest = arg
+  return input => {
+    latest = input
     if (running) {
       again = true
       return running

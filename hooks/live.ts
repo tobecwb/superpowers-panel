@@ -26,9 +26,9 @@ export type MessageLike = {
   }[]
 }
 
-const str = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
-const strs = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((one): one is string => typeof one === 'string') : []
+const asString = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
+const asStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 
 export const extractPlanPath = (text: string): string | undefined => PLAN_PATH.exec(text)?.[0]
 
@@ -45,29 +45,29 @@ export const toolEvent = (tool: string, input: Record<string, unknown>, result: 
   switch (tool) {
     case 'TaskCreate': {
       const id = (result as { task?: { id?: unknown } } | undefined)?.task?.id
-      const subject = str(input.subject)
+      const subject = asString(input.subject)
       return typeof id === 'string' && subject !== undefined ? { kind: 'create', id, subject } : undefined
     }
     case 'TaskUpdate': {
-      const id = str(input.taskId)
+      const id = asString(input.taskId)
       return id === undefined
         ? undefined
         : {
             kind: 'update',
             id,
-            subject: str(input.subject),
-            status: str(input.status),
-            addBlockedBy: strs(input.addBlockedBy),
+            subject: asString(input.subject),
+            status: asString(input.status),
+            addBlockedBy: asStringArray(input.addBlockedBy),
           }
     }
     case 'Skill': {
-      const skill = str(input.skill)
-      return skill === undefined ? undefined : { kind: 'skill', skill, args: str(input.args) }
+      const skill = asString(input.skill)
+      return skill === undefined ? undefined : { kind: 'skill', skill, args: asString(input.args) }
     }
     case 'Read':
     case 'Write':
     case 'Edit': {
-      const path = str(input.file_path)
+      const path = asString(input.file_path)
       return path === undefined ? undefined : { kind: 'touch', path }
     }
   }
@@ -79,11 +79,11 @@ export const taskListOf = (result: unknown): SessionTask[] | undefined => {
   if (!Array.isArray(tasks)) return undefined
   return tasks.flatMap((task: unknown): SessionTask[] => {
     const raw = task as Record<string, unknown> | null
-    const id = str(raw?.id)
-    const subject = str(raw?.subject)
+    const id = asString(raw?.id)
+    const subject = asString(raw?.subject)
     return id === undefined || subject === undefined
       ? []
-      : [{ id, subject, status: toStatus(raw?.status), blockedBy: strs(raw?.blockedBy) }]
+      : [{ id, subject, status: toStatus(raw?.status), blockedBy: asStringArray(raw?.blockedBy) }]
   })
 }
 
@@ -151,9 +151,9 @@ export const replay = (messages: readonly MessageLike[]): Live =>
       const skill = parsePromptSkill(message.text)
       return skill ? applyEvent(live, { kind: 'skill', ...skill }) : live
     }
-    return message.toolUses.reduce((acc, use) => {
-      if (use.isError || typeof use.result === 'string') return acc
-      const event = toolEvent(use.tool, use.input, use.result)
-      return event ? applyEvent(acc, event) : acc
+    return message.toolUses.reduce((currentLive, toolUse) => {
+      if (toolUse.isError || typeof toolUse.result === 'string') return currentLive
+      const event = toolEvent(toolUse.tool, toolUse.input, toolUse.result)
+      return event ? applyEvent(currentLive, event) : currentLive
     }, live)
   }, EMPTY_LIVE)

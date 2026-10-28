@@ -30,10 +30,10 @@ export const baseName = (path: string): string => path.split('/').pop() ?? path
 export const linkPlan = (plan: Plan, specs: readonly Spec[]): { spec?: Spec; specMissing: boolean } => {
   if (plan.specRef !== undefined) {
     const ref = plan.specRef.replace(/\\/g, '/').replace(/^\.\//, '')
-    const spec = specs.find(one => one.path === ref || baseName(one.path) === baseName(ref))
+    const spec = specs.find(candidate => candidate.path === ref || baseName(candidate.path) === baseName(ref))
     return spec ? { spec, specMissing: false } : { specMissing: true }
   }
-  const spec = specs.find(one => one.slug === plan.slug)
+  const spec = specs.find(candidate => candidate.slug === plan.slug)
   return spec ? { spec, specMissing: false } : { specMissing: false }
 }
 
@@ -59,8 +59,8 @@ const mergeStatuses = (tasks: readonly PlanTask[], session: Record<string, Sessi
 export const isBlocked = (task: PlanTask, tasks: readonly PlanTask[]): boolean =>
   task.status !== 'completed' &&
   task.blockedBy.some(id => {
-    const dep = tasks.find(one => one.id === id)
-    return dep !== undefined && dep.status !== 'completed'
+    const dependency = tasks.find(other => other.id === id)
+    return dependency !== undefined && dependency.status !== 'completed'
   })
 
 export const groupTasks = (tasks: readonly PlanTask[]): TaskGroups => ({

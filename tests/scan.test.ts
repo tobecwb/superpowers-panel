@@ -26,7 +26,7 @@ const fakeFs = (files: Record<string, string>, unreadable: string[] = []): FsLik
   }
 }
 
-const P = '/r/docs/superpowers'
+const SUPERPOWERS_DIR = '/r/docs/superpowers'
 
 test('sem docs/superpowers', async () => {
   expect(await scanProject(fakeFs({ '/r/README.md': '' }), '/r', 5)).toEqual({
@@ -38,25 +38,26 @@ test('sem docs/superpowers', async () => {
 })
 
 test('docs/superpowers sem specs nem plans', async () => {
-  const project = await scanProject(fakeFs({ [`${P}/model-routing.json`]: '{}' }), '/r', 5)
+  const project = await scanProject(fakeFs({ [`${SUPERPOWERS_DIR}/model-routing.json`]: '{}' }), '/r', 5)
   expect(project).toEqual({ specs: [], plans: [], scannedAt: 5, hasSuperpowersDir: true })
 })
 
 test('lê specs, planos e estados do tasks.json', async () => {
   const fs = fakeFs(
     {
-      [`${P}/specs/2026-01-01-auth-design.md`]: '# a',
-      [`${P}/plans/2026-01-02-auth.md`]: '# p\n\n**Spec:** `docs/superpowers/specs/2026-01-01-auth-design.md`',
-      [`${P}/plans/2026-01-02-auth.md.tasks.json`]: JSON.stringify({
+      [`${SUPERPOWERS_DIR}/specs/2026-01-01-auth-design.md`]: '# a',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-02-auth.md`]:
+        '# p\n\n**Spec:** `docs/superpowers/specs/2026-01-01-auth-design.md`',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-02-auth.md.tasks.json`]: JSON.stringify({
         tasks: [{ id: 0, subject: 'Task 0: A', status: 'completed' }],
       }),
-      [`${P}/plans/2026-01-03-bad.md`]: '# b',
-      [`${P}/plans/2026-01-03-bad.md.tasks.json`]: '{',
-      [`${P}/plans/2026-01-04-gone.md`]: '# g',
-      [`${P}/plans/2026-01-04-gone.md.tasks.json`]: '{"tasks": []}',
-      [`${P}/plans/2026-01-05-none.md`]: '# n',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-03-bad.md`]: '# b',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-03-bad.md.tasks.json`]: '{',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-04-gone.md`]: '# g',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-04-gone.md.tasks.json`]: '{"tasks": []}',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-05-none.md`]: '# n',
     },
-    [`${P}/plans/2026-01-04-gone.md.tasks.json`],
+    [`${SUPERPOWERS_DIR}/plans/2026-01-04-gone.md.tasks.json`],
   )
   const project = await scanProject(fs, '/r', 7)
   expect(project.specs).toEqual([
@@ -84,22 +85,25 @@ test('coalesce serializa e junta pedidos', async () => {
   const gate = new Promise<void>(resolve => {
     release = resolve
   })
-  const run = coalesce(async (_: number) => {
+  const run = coalesce(async (_input: number) => {
     runs++
     await gate
   })
-  const a = run(1)
-  const b = run(2)
-  const c = run(3)
+  const firstRun = run(1)
+  const secondRun = run(2)
+  const thirdRun = run(3)
   release()
-  await Promise.all([a, b, c])
+  await Promise.all([firstRun, secondRun, thirdRun])
   expect(runs).toBe(2)
 })
 
 test('tasks.json maior que 4 MiB é inválido', async () => {
   const big = `{"tasks": [], "pad": "${'x'.repeat(4 * 1024 * 1024 + 1)}"}`
   const project = await scanProject(
-    fakeFs({ [`${P}/plans/2026-01-06-big.md`]: '# b', [`${P}/plans/2026-01-06-big.md.tasks.json`]: big }),
+    fakeFs({
+      [`${SUPERPOWERS_DIR}/plans/2026-01-06-big.md`]: '# b',
+      [`${SUPERPOWERS_DIR}/plans/2026-01-06-big.md.tasks.json`]: big,
+    }),
     '/r',
     1,
   )

@@ -17,7 +17,7 @@ export const taskLine = (task: PlanTask, tasks: readonly PlanTask[]): string => 
   if (task.status === 'in_progress') return `▶ ${name}  em andamento${gate}`
   if (isBlocked(task, tasks)) {
     const deps = task.blockedBy
-      .filter(id => tasks.some(one => one.id === id && one.status !== 'completed'))
+      .filter(id => tasks.some(other => other.id === id && other.status !== 'completed'))
       .map(id => `T${id}`)
       .join(', ')
     return `⊘ ${name}  bloqueada por ${deps}${gate}`

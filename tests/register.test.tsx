@@ -4,12 +4,13 @@ import { expect, type TestBody, test } from 'claude-code/testing'
 declare const setTimeout: (callback: (...args: never[]) => void, ms: number) => unknown
 
 const ROOT = '/repo'
-const P = `${ROOT}/docs/superpowers`
+const SUPERPOWERS_DIR = `${ROOT}/docs/superpowers`
 const FILES: Record<string, string> = {
-  [`${P}/specs/2026-10-01-auth-design.md`]: '# auth',
-  [`${P}/specs/2026-10-02-billing-design.md`]: '# billing',
-  [`${P}/plans/2026-10-03-auth.md`]: '# Auth\n\n**Spec:** `docs/superpowers/specs/2026-10-01-auth-design.md`\n',
-  [`${P}/plans/2026-10-03-auth.md.tasks.json`]: JSON.stringify({
+  [`${SUPERPOWERS_DIR}/specs/2026-10-01-auth-design.md`]: '# auth',
+  [`${SUPERPOWERS_DIR}/specs/2026-10-02-billing-design.md`]: '# billing',
+  [`${SUPERPOWERS_DIR}/plans/2026-10-03-auth.md`]:
+    '# Auth\n\n**Spec:** `docs/superpowers/specs/2026-10-01-auth-design.md`\n',
+  [`${SUPERPOWERS_DIR}/plans/2026-10-03-auth.md.tasks.json`]: JSON.stringify({
     tasks: [
       { id: 0, subject: 'Task 0: Login', status: 'completed', description: '' },
       { id: 1, subject: 'Task 1: Refresh', status: 'pending', blockedBy: [0], description: '' },
@@ -22,9 +23,9 @@ const FILES: Record<string, string> = {
       },
     ],
   }),
-  [`${P}/plans/2026-09-02-hotfix.md`]: '# Hotfix',
+  [`${SUPERPOWERS_DIR}/plans/2026-09-02-hotfix.md`]: '# Hotfix',
 }
-const DIRS = new Set([`${ROOT}/docs`, P, `${P}/specs`, `${P}/plans`])
+const DIRS = new Set([`${ROOT}/docs`, SUPERPOWERS_DIR, `${SUPERPOWERS_DIR}/specs`, `${SUPERPOWERS_DIR}/plans`])
 
 const PANE = {
   plugin: 'superpowers-panel',
@@ -184,7 +185,7 @@ test('clicar num plano abre o DETALHE; ✕ fechar o tira', async ($, on) => {
   await ui.unmount()
 })
 
-const OURS = [P, `${P}/specs`, `${P}/plans`]
+const OURS = [SUPERPOWERS_DIR, `${SUPERPOWERS_DIR}/specs`, `${SUPERPOWERS_DIR}/plans`]
 
 test('classic.SessionStart observa docs/superpowers e mantém os caminhos de outros', async ($, on) => {
   engine(on)
@@ -199,7 +200,7 @@ test('classic.FileChanged em docs/superpowers re-varre (outra sessão concluiu o
   on('classic.FileChanged', () => ({}))
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
-  const tasksPath = `${P}/plans/2026-10-03-auth.md.tasks.json`
+  const tasksPath = `${SUPERPOWERS_DIR}/plans/2026-10-03-auth.md.tasks.json`
   files[tasksPath] = JSON.stringify({
     tasks: [0, 1, 2].map(id => ({ id, subject: `Task ${id}: T${id}`, status: 'completed', description: '' })),
   })

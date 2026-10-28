@@ -53,8 +53,8 @@ const backfill = async ($: EngineInterface) => {
     // Sessão sem as ferramentas nativas de tarefa: nada a sincronizar, sem aviso.
     const hasTaskList = (await $.tool.list()).some(tool => tool.name === 'TaskList')
     if (hasTaskList) {
-      const ran = await $.tool.call({ tool: 'TaskList' })
-      const tasks = 'deny' in ran && ran.deny !== undefined ? undefined : taskListOf(ran.result)
+      const hookResult = await $.tool.call({ tool: 'TaskList' })
+      const tasks = 'deny' in hookResult && hookResult.deny !== undefined ? undefined : taskListOf(hookResult.result)
       if (!tasks) throw new Error('TaskList indisponível')
       live = { ...applyEvent(live, { kind: 'snapshot', tasks }), syncNote: undefined }
     } else {
@@ -82,10 +82,10 @@ const rootOr = ($: EngineInterface, fallback: string): Promise<string> => $.sess
 
 // O engine troca a lista dinâmica pelo `watchPaths` que o hook devolve: só
 // juntamos os nossos quando alguém (o engine ou outro hook) já devolve uma.
-const withOurWatch = async <R extends object>($: EngineInterface, ran: R, root: string): Promise<R> => {
-  const existing = (ran as { watchPaths?: unknown }).watchPaths
-  if (!Array.isArray(existing)) return ran
-  return { ...ran, watchPaths: mergeWatchPaths(existing as string[], watchTargets(await rootOr($, root))) }
+const withOurWatch = async <R extends object>($: EngineInterface, hookResult: R, root: string): Promise<R> => {
+  const existing = (hookResult as { watchPaths?: unknown }).watchPaths
+  if (!Array.isArray(existing)) return hookResult
+  return { ...hookResult, watchPaths: mergeWatchPaths(existing as string[], watchTargets(await rootOr($, root))) }
 }
 
 const recordToolCall = async ($: EngineInterface, tool: string, input: Record<string, unknown>, result: unknown) => {
@@ -105,47 +105,47 @@ export const register: Register = on => {
   // Outra sessão mexendo em docs/superpowers (ex.: .tasks.json chegando a 7/7)
   // só aparece se o engine observar essas pastas e avisar via FileChanged.
   on('classic.SessionStart', async ($, e, next) => {
-    const ran = await next(e)
+    const hookResult = await next(e)
     try {
       const root = await rootOr($, e.cwd)
-      return { ...ran, watchPaths: mergeWatchPaths(ran.watchPaths, watchTargets(root)) }
+      return { ...hookResult, watchPaths: mergeWatchPaths(hookResult.watchPaths, watchTargets(root)) }
     } catch (error) {
       debug($, error)
-      return ran
+      return hookResult
     }
   }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia o início
 
   on('classic.CwdChanged', async ($, e, next) => {
-    const ran = await next(e)
+    const hookResult = await next(e)
     void rescan($).catch(error => debug($, error))
     try {
-      return await withOurWatch($, ran, e.new_cwd)
+      return await withOurWatch($, hookResult, e.new_cwd)
     } catch (error) {
       debug($, error)
-      return ran
+      return hookResult
     }
   }).catch((_$, e, next) => next(e))
 
   on('classic.FileChanged', async ($, e, next) => {
-    const ran = await next(e)
+    const hookResult = await next(e)
     if (isSuperpowersPath(e.file_path)) void rescan($).catch(error => debug($, error))
     try {
-      return await withOurWatch($, ran, e.cwd)
+      return await withOurWatch($, hookResult, e.cwd)
     } catch (error) {
       debug($, error)
-      return ran
+      return hookResult
     }
   }).catch((_$, e, next) => next(e))
 
   on('tool.call', async ($, e, next) => {
     const tool = String(e.tool)
     if (!WATCHED.has(tool)) return next(e)
-    const ran = await next(e)
-    const isDenied = 'deny' in ran && ran.deny !== undefined
-    if (isDenied || ran.isError) return ran
+    const hookResult = await next(e)
+    const isDenied = 'deny' in hookResult && hookResult.deny !== undefined
+    if (isDenied || hookResult.isError) return hookResult
     const input = e as unknown as Record<string, unknown>
-    await recordToolCall($, tool, input, ran.result).catch(error => debug($, error))
-    return ran
+    await recordToolCall($, tool, input, hookResult.result).catch(error => debug($, error))
+    return hookResult
   }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia a ferramenta
 
   on('prompt.submit', async ($, e, next) => {
@@ -161,18 +161,18 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'sp' }, async ($, e) => {
-    const arg = e.args.trim()
-    if (arg === 'sync') {
+    const subcommand = e.args.trim()
+    if (subcommand === 'sync') {
       await rescan($)
       await backfill($)
       return { text: 'Superpowers: sincronizado.' }
     }
-    if (arg === 'status') {
+    if (subcommand === 'status') {
       const project = await read($, projectAtom)
       const live = await read($, liveAtom)
       return { text: summarize(derive(project, live), project, live) }
     }
-    if (arg !== '') return { text: USAGE }
+    if (subcommand !== '') return { text: USAGE }
     if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
       await $.ui.close({ id: PANE })
       return { text: 'Painel superpowers fechado.' }
@@ -187,7 +187,9 @@ export const register: Register = on => {
     const live = await read($, liveAtom)
     const expanded = await read($, expandedAtom)
     const onToggle = (key: string) => () => {
-      void update($, expandedAtom, list => (list.includes(key) ? list.filter(one => one !== key) : [...list, key]))
+      void update($, expandedAtom, list =>
+        list.includes(key) ? list.filter(expandedKey => expandedKey !== key) : [...list, key],
+      )
     }
     const selected = await read($, selectedAtom)
     const onSelect = (path: string) => () => {
