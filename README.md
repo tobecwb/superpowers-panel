@@ -11,10 +11,26 @@ A Claude Code mod that shows the
 
 The panel speaks English and Brazilian Portuguese.
 
-## Usage
+## Install
+
+In a Claude Code session (2.1.275 or later):
+
+    /plugin install superpowers-panel --marketplace tobecwb/superpowers-panel
+
+Or in two steps:
+
+    /plugin marketplace add tobecwb/superpowers-panel
+    /plugin install superpowers-panel@superpowers-panel
+
+To get new releases, run `/plugin marketplace update superpowers-panel`, or turn on auto-update
+under `/plugin` > Marketplaces.
+
+To run from a local checkout instead:
 
     git clone https://github.com/tobecwb/superpowers-panel.git
     claude --plugin-dir /path/to/superpowers-panel
+
+## Usage
 
 The panel opens on its own in projects that have a `docs/superpowers/` folder.
 

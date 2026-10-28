@@ -1,0 +1,12 @@
+{
+  "name": "superpowers-panel",
+  "description": "Live Claude Code panel for the superpowers-extended-cc workflow",
+  "owner": { "name": "tobecwb", "url": "https://github.com/tobecwb" },
+  "plugins": [
+    {
+      "name": "superpowers-panel",
+      "source": "./",
+      "description": "Live panel for the superpowers-extended-cc workflow: tasks, plans and specs"
+    }
+  ]
+}
