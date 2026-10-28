@@ -229,3 +229,14 @@ test('classic.CwdChanged junta nossos caminhos à lista que outro hook troca', a
   const result = (await $.classic.CwdChanged({ old_cwd: '/old', new_cwd: ROOT })) as { watchPaths?: string[] }
   expect(result.watchPaths).toEqual(['/y', ...OURS])
 })
+
+test('a plan that is both incomplete and without spec keeps one key per list', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const hotfix = 'docs/superpowers/plans/2026-09-02-hotfix.md'
+  expect((await ui.find({ key: `plan:${hotfix}` }))?.text).toBe('  · 2026-09-02-hotfix.md  sem tasks.json')
+  expect((await ui.find({ key: `nospec:${hotfix}` }))?.text).toBe('  · 2026-09-02-hotfix.md')
+  await ui.unmount()
+})

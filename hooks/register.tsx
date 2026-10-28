@@ -88,6 +88,13 @@ const withOurWatch = async <R extends object>($: EngineInterface, ran: R, root: 
   return { ...ran, watchPaths: mergeWatchPaths(existing as string[], watchTargets(await rootOr($, root))) }
 }
 
+const recordToolCall = async ($: EngineInterface, tool: string, input: Record<string, unknown>, result: unknown) => {
+  const event = toolEvent(tool, input, result)
+  if (event) await update($, liveAtom, live => applyEvent(live, event))
+  const isSuperpowersWrite = (tool === 'Write' || tool === 'Edit') && isSuperpowersPath(input.file_path)
+  if (isSuperpowersWrite) void rescan($).catch(error => debug($, error))
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'sp', description: 'Painel superpowers: /sp, /sp status, /sp sync' })
@@ -134,18 +141,10 @@ export const register: Register = on => {
     const tool = String(e.tool)
     if (!WATCHED.has(tool)) return next(e)
     const ran = await next(e)
-    try {
-      const isDenied = 'deny' in ran && ran.deny !== undefined
-      if (!isDenied && !ran.isError) {
-        const input = e as unknown as Record<string, unknown>
-        const event = toolEvent(tool, input, ran.result)
-        if (event) await update($, liveAtom, live => applyEvent(live, event))
-        if ((tool === 'Write' || tool === 'Edit') && isSuperpowersPath(input.file_path))
-          void rescan($).catch(error => debug($, error))
-      }
-    } catch (error) {
-      debug($, error)
-    }
+    const isDenied = 'deny' in ran && ran.deny !== undefined
+    if (isDenied || ran.isError) return ran
+    const input = e as unknown as Record<string, unknown>
+    await recordToolCall($, tool, input, ran.result).catch(error => debug($, error))
     return ran
   }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia a ferramenta
 
@@ -187,13 +186,13 @@ export const register: Register = on => {
     const project = await read($, projectAtom)
     const live = await read($, liveAtom)
     const expanded = await read($, expandedAtom)
-    const toggle = (key: string) => () => {
+    const onToggle = (key: string) => () => {
       void update($, expandedAtom, list => (list.includes(key) ? list.filter(one => one !== key) : [...list, key]))
     }
     const selected = await read($, selectedAtom)
-    const select = (path: string) => () => {
+    const onSelect = (path: string) => () => {
       void update($, selectedAtom, current => (current === path ? '' : path))
     }
-    return paneView(elements, project, live, expanded, toggle, selected, select)
+    return paneView({ elements, project, live, expanded, selected, onToggle, onSelect })
   })
 }

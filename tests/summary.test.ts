@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import { derive } from '../hooks/link'
-import { bar, detailLines, displaySubject, summarize, taskLine } from '../hooks/summary'
+import { bar, detailLines, displaySubject, projectSections, summarize, taskLine } from '../hooks/summary'
 import type { Live, PlanTask, Project } from '../types'
 
 const t = (id: number, status: PlanTask['status'], extra: Partial<PlanTask> = {}): PlanTask => ({
@@ -168,4 +168,43 @@ test('detailLines: plano ok, spec ausente, sem spec, sem tasks.json', async () =
   ])
   expect(detailLines(view('misc.md'))).toEqual(['2026-01-04-misc.md  ░░░░░░░░░░ 0/1', 'Spec: —', '○ T0 Item 0'])
   expect(detailLines(view('hotfix.md'))).toEqual(['2026-01-05-hotfix.md  sem tasks.json', 'Spec: —'])
+})
+
+test('projectSections lists non-empty sections in display order', async () => {
+  const project: Project = {
+    hasSuperpowersDir: true,
+    scannedAt: 0,
+    specs: [{ path: 'docs/superpowers/specs/2026-01-01-orphan-design.md', slug: 'orphan', date: '2026-01-01' }],
+    plans: [
+      {
+        path: 'docs/superpowers/plans/2026-01-02-done.md',
+        slug: 'done',
+        date: '2026-01-02',
+        tasksFile: 'ok',
+        tasks: [t(0, 'completed')],
+      },
+      {
+        path: 'docs/superpowers/plans/2026-01-03-hotfix.md',
+        slug: 'hotfix',
+        date: '2026-01-03',
+        tasksFile: 'missing',
+        tasks: [],
+      },
+    ],
+  }
+  const sections = projectSections(derive(project, { sessionTasks: {} }))
+
+  expect(sections.map(section => section.id)).toEqual(['specsWithoutPlan', 'incomplete', 'withoutSpec', 'complete'])
+  expect(sections.map(section => section.header)).toEqual([
+    '⚠ 1 spec(s) sem plano',
+    '◐ 1 plano(s) incompleto(s)',
+    '⚠ 2 plano(s) sem spec',
+    '✓ 1 plano(s) concluído(s)',
+  ])
+  expect(sections[0]!.items).toEqual([{ label: '  · 2026-01-01-orphan-design.md' }])
+  expect(sections[1]!.items).toEqual([
+    { label: '  · 2026-01-03-hotfix.md  sem tasks.json', planPath: 'docs/superpowers/plans/2026-01-03-hotfix.md' },
+  ])
+  expect(sections[3]!.collapsible).toBe(true)
+  expect(projectSections(derive({ ...project, specs: [], plans: [] }, { sessionTasks: {} }))).toEqual([])
 })

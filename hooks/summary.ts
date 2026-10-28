@@ -35,12 +35,60 @@ const progress = (plan: PlanView): string => `${bar(plan.done, plan.total)} ${pl
 
 export const planLine = (plan: PlanView): string => `Plano: ${baseName(plan.path)}  ${progress(plan)}`
 
-export const incompleteItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${plan.label ?? progress(plan)}`
+const incompleteItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${plan.label ?? progress(plan)}`
 
-export const completeItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${progress(plan)}`
+const completeItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${progress(plan)}`
 
-export const withoutSpecItem = (plan: PlanView): string =>
+const withoutSpecItem = (plan: PlanView): string =>
   `  · ${baseName(plan.path)}${plan.specMissing ? '  (spec ausente)' : ''}`
+
+export type SectionId = 'specsWithoutPlan' | 'incomplete' | 'withoutSpec' | 'complete'
+
+export type SectionItem = { label: string; planPath?: string }
+
+export type ProjectSection = {
+  id: SectionId
+  header: string
+  color?: 'warning' | 'suggestion'
+  collapsible: boolean
+  items: SectionItem[]
+}
+
+const planItems = (plans: readonly PlanView[], label: (plan: PlanView) => string): SectionItem[] =>
+  plans.map(plan => ({ label: label(plan), planPath: plan.path }))
+
+export const projectSections = (derived: Derived): ProjectSection[] => {
+  const sections: ProjectSection[] = [
+    {
+      id: 'specsWithoutPlan',
+      header: `⚠ ${derived.specsWithoutPlan.length} spec(s) sem plano`,
+      color: 'warning',
+      collapsible: false,
+      items: derived.specsWithoutPlan.map(spec => ({ label: `  · ${baseName(spec.path)}` })),
+    },
+    {
+      id: 'incomplete',
+      header: `◐ ${derived.incomplete.length} plano(s) incompleto(s)`,
+      color: 'suggestion',
+      collapsible: false,
+      items: planItems(derived.incomplete, incompleteItem),
+    },
+    {
+      id: 'withoutSpec',
+      header: `⚠ ${derived.withoutSpec.length} plano(s) sem spec`,
+      color: 'warning',
+      collapsible: false,
+      items: planItems(derived.withoutSpec, withoutSpecItem),
+    },
+    {
+      id: 'complete',
+      header: `✓ ${derived.complete.length} plano(s) concluído(s)`,
+      collapsible: true,
+      items: planItems(derived.complete, completeItem),
+    },
+  ]
+  return sections.filter(section => section.items.length > 0)
+}
 
 export const isEmpty = (project: Project, live: Live): boolean =>
   !project.hasSuperpowersDir && Object.keys(live.sessionTasks).length === 0 && live.phase === undefined
@@ -74,22 +122,8 @@ export const summarize = (derived: Derived, project: Project, live: Live): strin
   }
   if (derived.outside.length > 0) lines.push('', 'FORA DO PLANO (sessão)', ...derived.outside.map(sessionLine))
   lines.push('', 'PROJETO')
-  const before = lines.length
-  if (derived.specsWithoutPlan.length > 0) {
-    lines.push(
-      `⚠ ${derived.specsWithoutPlan.length} spec(s) sem plano`,
-      ...derived.specsWithoutPlan.map(spec => `  · ${baseName(spec.path)}`),
-    )
-  }
-  if (derived.incomplete.length > 0) {
-    lines.push(`◐ ${derived.incomplete.length} plano(s) incompleto(s)`, ...derived.incomplete.map(incompleteItem))
-  }
-  if (derived.withoutSpec.length > 0) {
-    lines.push(`⚠ ${derived.withoutSpec.length} plano(s) sem spec`, ...derived.withoutSpec.map(withoutSpecItem))
-  }
-  if (derived.complete.length > 0) {
-    lines.push(`✓ ${derived.complete.length} plano(s) concluído(s)`, ...derived.complete.map(completeItem))
-  }
-  if (lines.length === before) lines.push('Nenhuma spec ou plano ainda.')
+  const sections = projectSections(derived)
+  if (sections.length === 0) lines.push('Nenhuma spec ou plano ainda.')
+  for (const section of sections) lines.push(section.header, ...section.items.map(item => item.label))
   return lines.join('\n')
 }
