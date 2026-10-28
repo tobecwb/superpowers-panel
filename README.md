@@ -20,6 +20,8 @@ O painel abre sozinho em projetos com `docs/superpowers/`.
 
 ## Desenvolvimento
 
-    claude plugin test .
-    claude plugin validate .
-    npx -y -p typescript@5.6.3 tsc -p .
+    bun install        # instala as ferramentas e liga o pre-commit
+    bun run check      # typecheck + lint + código morto + comentários + testes
+    bun run fix        # aplica formatação e correções automáticas do Biome
+
+Convenções de código em [`CLAUDE.md`](CLAUDE.md).
