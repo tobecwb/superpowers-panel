@@ -14,6 +14,7 @@ import { summarize } from './summary'
 const projectAtom = atom({ plugin: 'superpowers-panel', key: 'project' } as const, EMPTY_PROJECT, { shape: 'project-1' })
 const liveAtom = atom({ plugin: 'superpowers-panel', key: 'live' } as const, EMPTY_LIVE, { shape: 'live-1' })
 const expandedAtom = atom({ plugin: 'superpowers-panel', key: 'expanded' } as const, [] as string[], { shape: 'expanded-1' })
+const selectedAtom = atom({ plugin: 'superpowers-panel', key: 'selected' } as const, '', { shape: 'selected-1' })
 
 const WATCHED = new Set(['TaskCreate', 'TaskUpdate', 'Skill', 'Read', 'Write', 'Edit'])
 const USAGE ='Uso: /sp (abre/fecha o painel) · /sp status · /sp sync'
@@ -139,6 +140,10 @@ export const register: Register = on => {
     const toggle = (key: string) => () => {
       void update($, expandedAtom, list => (list.includes(key) ? list.filter(one => one !== key) : [...list, key]))
     }
-    return paneView(elements, project, live, expanded, toggle)
+    const selected = await read($, selectedAtom)
+    const select = (path: string) => () => {
+      void update($, selectedAtom, current => (current === path ? '' : path))
+    }
+    return paneView(elements, project, live, expanded, toggle, selected, select)
   })
 }

@@ -54,6 +54,18 @@ export const orderedPlanTasks = (plan: PlanView): PlanTask[] => {
   return [...groups.running, ...groups.pending, ...groups.blocked, ...groups.done]
 }
 
+const specLine = (plan: PlanView): string =>
+  plan.spec ? `Spec: ${baseName(plan.spec.path)}`
+    : plan.specMissing ? `Spec: ausente (${plan.specRef ?? ''})`
+      : 'Spec: —'
+
+// Cabeçalho, spec e todas as tarefas (concluídas inclusive) de um plano.
+export const detailLines = (plan: PlanView): string[] => [
+  `${baseName(plan.path)}  ${plan.label ?? progress(plan)}`,
+  specLine(plan),
+  ...orderedPlanTasks(plan).map(task => taskLine(task, plan.tasks)),
+]
+
 export const summarize = (derived: Derived, project: Project, live: Live): string => {
   if (isEmpty(project, live)) return 'Nenhum dado superpowers neste projeto.'
   const lines = [phaseLine(live)]

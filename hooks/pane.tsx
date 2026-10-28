@@ -1,9 +1,10 @@
 import type { BoxProps, ButtonProps, ElementConstructor, RenderElement, TextProps } from 'claude-code'
 
 import type { Live, Project } from '../types'
-import { derive, groupTasks } from './link'
+import { derive, groupTasks, type PlanView } from './link'
 import {
-  baseName, completeItem, incompleteItem, isEmpty, phaseLine, planLine, sessionLine, taskLine, withoutSpecItem,
+  baseName, completeItem, detailLines, incompleteItem, isEmpty, orderedPlanTasks, phaseLine, planLine, sessionLine,
+  taskLine, withoutSpecItem,
 } from './summary'
 
 export type PaneElements = {
@@ -20,6 +21,8 @@ export const paneView = (
   live: Live,
   expanded: readonly string[],
   toggle: (key: string) => () => void,
+  selected: string,
+  select: (path: string) => () => void,
 ): RenderElement => {
   if (isEmpty(project, live)) {
     return (
@@ -34,6 +37,12 @@ export const paneView = (
   const groups = active ? groupTasks(active.tasks) : undefined
   const showDone = expanded.includes('done')
   const showComplete = expanded.includes('complete')
+  // Um plano pode estar em duas listas (incompleto e sem spec): a chave leva a lista.
+  const planButton = (list: string, plan: PlanView, label: string, dim = false) => (
+    <Button key={`${list}:${plan.path}`} label={label} onPress={select(plan.path)} plain dimColor={dim} />
+  )
+  const all = [...derived.incomplete, ...derived.complete]
+  const detail = selected === '' ? undefined : all.find(plan => plan.path === selected)
   const hasAlerts = derived.specsWithoutPlan.length + derived.incomplete.length +
     derived.withoutSpec.length + derived.complete.length > 0
 
@@ -73,16 +82,27 @@ export const paneView = (
         {derived.incomplete.length > 0 && (
           <Text color="suggestion">{`◐ ${derived.incomplete.length} plano(s) incompleto(s)`}</Text>
         )}
-        {derived.incomplete.map(plan => <Text>{incompleteItem(plan)}</Text>)}
+        {derived.incomplete.map(plan => planButton('plan', plan, incompleteItem(plan)))}
         {derived.withoutSpec.length > 0 && (
           <Text color="warning">{`⚠ ${derived.withoutSpec.length} plano(s) sem spec`}</Text>
         )}
-        {derived.withoutSpec.map(plan => <Text>{withoutSpecItem(plan)}</Text>)}
+        {derived.withoutSpec.map(plan => planButton('nospec', plan, withoutSpecItem(plan)))}
         {derived.complete.length > 0 && (
           <Button key="complete" label={`${showComplete ? '▾' : '▸'} ✓ ${derived.complete.length} plano(s) concluído(s)`} onPress={toggle('complete')} plain />
         )}
-        {showComplete && derived.complete.map(plan => <Text dimColor>{completeItem(plan)}</Text>)}
+        {showComplete && derived.complete.map(plan => planButton('plan', plan, completeItem(plan), true))}
       </Box>
+
+      {detail && (
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold>DETALHE</Text>
+          {detailLines(detail).slice(0, 2).map(line => <Text>{line}</Text>)}
+          {orderedPlanTasks(detail).map(task => (
+            <Text color={task.status === 'in_progress' ? 'claude' : undefined}>{taskLine(task, detail.tasks)}</Text>
+          ))}
+          <Button key="detail-close" label="✕ fechar" onPress={select(detail.path)} plain />
+        </Box>
+      )}
     </Box>
   )
 }

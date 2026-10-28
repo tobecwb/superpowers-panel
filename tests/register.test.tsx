@@ -129,3 +129,32 @@ test('sessão sem a ferramenta TaskList não marca sincronização parcial', asy
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
   expect(status.text).not.toContain('sincronização parcial')
 })
+
+test('clicar num plano abre o DETALHE; ✕ fechar o tira', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const key = 'plan:docs/superpowers/plans/2026-10-03-auth.md'
+  expect((await ui.find({ key }))?.text).toBe('  · 2026-10-03-auth.md  ███░░░░░░░ 1/3')
+  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
+
+  await ui.press({ key })
+  await settle()
+  expect((await ui.find({ type: 'Text', text: 'DETALHE' }))?.text).toBe('DETALHE')
+  expect((await ui.find({ type: 'Text', text: /^Spec:/ }))?.text).toBe('Spec: 2026-10-01-auth-design.md')
+  expect((await ui.find({ type: 'Text', text: /T1 Refresh/ }))?.text).toBe('○ T1 Refresh')
+  expect((await ui.find({ type: 'Text', text: /T0 Login/ }))?.text).toBe('✓ T0 Login')
+
+  await ui.press({ key: 'detail-close' })
+  await settle()
+  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
+
+  await ui.press({ key })
+  await settle()
+  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeDefined()
+  await ui.press({ key })
+  await settle()
+  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
+  await ui.unmount()
+})

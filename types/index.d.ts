@@ -46,6 +46,8 @@ declare module 'claude-code' {
       project: Shaped<Project>
       live: Shaped<Live>
       expanded: Shaped<string[]>
+      // Caminho do plano aberto no DETALHE; '' quando nenhum.
+      selected: Shaped<string>
     }
   }
 }
