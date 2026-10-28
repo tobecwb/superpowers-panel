@@ -5,7 +5,8 @@ Mod de function hooks para Claude Code. Veja o README para uso.
 ## Code conventions
 
 - Identifiers, comments and test descriptions are written in **English**. User-facing text
-  (pane, `/sp` replies) stays in **PT-BR** with correct accents.
+  (pane, `/sp` replies) goes through the i18n catalog in `hooks/i18n/`, in **PT-BR** and **English**;
+  PT-BR keeps correct accents.
 - Use descriptive names. No 1–3 letter abbreviations, except `$`, `e` and `next` (the engine's
   hook API convention) and loop indexes. `raw` is fine for a not-yet-validated object.
 - A comment explains _why_ (an engine constraint, a non-obvious decision), never _what_ the line does.
