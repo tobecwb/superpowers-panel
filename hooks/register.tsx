@@ -1,10 +1,10 @@
 import type { EngineInterface, Register } from 'claude-code'
 import { atom, read, update } from 'claude-code'
 
-import type { Project } from '../types'
+import type { Locale, LocaleChoice, Project } from '../types'
 
-import { EMPTY_PROJECT, PANE, TITLE } from './atoms'
-import { messagesFor } from './i18n'
+import { EMPTY_PROJECT, PANE } from './atoms'
+import { detectLocale, messagesFor, parseLocaleChoice } from './i18n'
 import { applyEvent, EMPTY_LIVE, type MessageLike, parsePromptSkill, replay, taskListOf, toolEvent } from './live'
 import { parsePanelAction, toggleKey } from './panel-action'
 import { coalesce, type FsLike, isSuperpowersPath, mergeWatchPaths, scanProject, watchTargets } from './scan'
@@ -20,9 +20,14 @@ const expandedAtom = atom({ plugin: 'superpowers-panel', key: 'expanded' } as co
   shape: 'expanded-1',
 })
 const selectedAtom = atom({ plugin: 'superpowers-panel', key: 'selected' } as const, '', { shape: 'selected-1' })
+const localeAtom = atom({ plugin: 'superpowers-panel', key: 'locale' } as const, 'auto' as LocaleChoice, {
+  shape: 'locale-1',
+})
+const resolvedLocaleAtom = atom({ plugin: 'superpowers-panel', key: 'resolvedLocale' } as const, 'en' as Locale, {
+  shape: 'resolved-locale-1',
+})
 
 const WATCHED = new Set(['TaskCreate', 'TaskUpdate', 'Skill', 'Read', 'Write', 'Edit'])
-const USAGE = 'Uso: /sp (abre/fecha o painel) · /sp status · /sp sync'
 
 const debug = ($: EngineInterface, error: unknown) => $.ui.log(`superpowers-panel: ${String(error)}`, { to: 'debug' })
 
@@ -32,15 +37,28 @@ const fsOf = ($: EngineInterface): FsLike => ({
   read: path => $.fs.read(path) as Promise<string>,
 })
 
-// Task 4 swaps this for the session's resolved locale.
-const messages = messagesFor('pt-BR')
+const languageSetting = ($: EngineInterface): Promise<unknown> =>
+  $.settings.read({ key: 'language' }).catch(error => {
+    debug($, error)
+    return undefined
+  })
+
+const resolveLocale = async ($: EngineInterface): Promise<Locale> => {
+  const langEnv = await $.env.get('LANG').catch(() => undefined)
+  const locale = detectLocale(await read($, localeAtom), await languageSetting($), langEnv)
+  await update($, resolvedLocaleAtom, () => locale)
+  $.ui.invalidate('command.describe')
+  return locale
+}
+
+const sessionMessages = async ($: EngineInterface) => messagesFor(await read($, resolvedLocaleAtom))
 
 const panelModel = async ($: EngineInterface): Promise<PanelModel> =>
   buildPanel({
     project: await read($, projectAtom),
     live: await read($, liveAtom),
     ui: { expanded: await read($, expandedAtom), selected: await read($, selectedAtom) },
-    messages,
+    messages: await sessionMessages($),
   })
 
 // The engine only accepts `$` passed to top-level functions and `update` with the
@@ -87,7 +105,8 @@ const backfill = async ($: EngineInterface) => {
 const initialize = async ($: EngineInterface) => {
   await rescan($)
   await backfill($)
-  if ((await read($, projectAtom)).hasSuperpowersDir) await $.ui.open({ id: PANE, title: TITLE })
+  if ((await read($, projectAtom)).hasSuperpowersDir)
+    await $.ui.open({ id: PANE, title: (await sessionMessages($)).title })
 }
 
 const rootOr = ($: EngineInterface, fallback: string): Promise<string> => $.session.root().catch(() => fallback)
@@ -107,12 +126,40 @@ const recordToolCall = async ($: EngineInterface, tool: string, input: Record<st
   if (isSuperpowersWrite) void rescan($).catch(error => debug($, error))
 }
 
+const languageCommand = async ($: EngineInterface, argument: string) => {
+  if (argument === '') {
+    const choice = await read($, localeAtom)
+    const locale = await read($, resolvedLocaleAtom)
+    return { text: messagesFor(locale).replies.language(locale, choice === 'auto') }
+  }
+  const choice = parseLocaleChoice(argument)
+  if (choice === undefined) return { text: (await sessionMessages($)).replies.languageUsage }
+  await update($, localeAtom, () => choice)
+  return { text: messagesFor(await resolveLocale($)).replies.languageSet(choice === 'auto') }
+}
+
+const togglePane = async ($: EngineInterface) => {
+  const messages = await sessionMessages($)
+  if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
+    await $.ui.close({ id: PANE })
+    return { text: messages.replies.closed }
+  }
+  const opened = await $.ui.open({ id: PANE, title: messages.title })
+  return { text: opened.isPlaced ? messages.replies.opened : messages.replies.waitingRoom(opened.reason) }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'sp', description: 'Painel superpowers: /sp, /sp status, /sp sync' })
+    const messages = messagesFor(await resolveLocale($).catch(() => 'en' as const))
+    await $.command.register({ name: 'sp', description: messages.commandDescription })
     void initialize($).catch(error => debug($, error))
     return next(e)
   })
+
+  on('command.describe', { command: 'sp' }, async ($, e, next) => {
+    const described = await next(e)
+    return { ...described, description: (await sessionMessages($)).commandDescription }
+  }).catch((_$, e, next) => next(e))
 
   // Another session touching docs/superpowers (e.g. a .tasks.json reaching 7/7) only
   // shows up if the engine watches those folders and reports it through FileChanged.
@@ -173,20 +220,16 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'sp' }, async ($, e) => {
-    const subcommand = e.args.trim()
+    const [subcommand = '', ...rest] = e.args.trim().split(/\s+/)
     if (subcommand === 'sync') {
       await rescan($)
       await backfill($)
-      return { text: 'Superpowers: sincronizado.' }
+      return { text: (await sessionMessages($)).replies.synced }
     }
     if (subcommand === 'status') return { text: textView(await panelModel($)) }
-    if (subcommand !== '') return { text: USAGE }
-    if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
-      await $.ui.close({ id: PANE })
-      return { text: 'Painel superpowers fechado.' }
-    }
-    const opened = await $.ui.open({ id: PANE, title: TITLE })
-    return { text: opened.isPlaced ? 'Painel superpowers aberto.' : `Painel aguardando espaço: ${opened.reason}` }
+    if (subcommand === 'lang') return languageCommand($, rest.join(' '))
+    if (subcommand !== '') return { text: (await sessionMessages($)).usage }
+    return togglePane($)
   })
 
   on('ui.render', { component: 'Pane', requestId: 'superpowers' }, async ($, e) => {

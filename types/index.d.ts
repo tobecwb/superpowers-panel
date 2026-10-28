@@ -50,8 +50,10 @@ declare module 'claude-code' {
       project: Shaped<Project>
       live: Shaped<Live>
       expanded: Shaped<string[]>
-      // Path of the plan open in DETALHE; '' when none.
+      // Path of the plan open in the detail card; '' when none.
       selected: Shaped<string>
+      locale: Shaped<LocaleChoice>
+      resolvedLocale: Shaped<Locale>
     }
   }
 }

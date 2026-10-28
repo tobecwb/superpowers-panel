@@ -43,12 +43,22 @@ const PANE = {
 
 const TOOLS = ['TaskCreate', 'TaskUpdate', 'TaskList', 'Skill', 'Read', 'Write', 'Edit']
 
-const engine = (
-  on: Parameters<TestBody>[1],
-  taskList: unknown = { tasks: [] },
-  tools: readonly string[] = TOOLS,
-  files: Record<string, string> = FILES,
-) => {
+type Environment = { language?: unknown; lang?: string }
+
+type EngineOptions = {
+  taskList?: unknown
+  tools?: readonly string[]
+  files?: Record<string, string>
+  environment?: Environment
+}
+
+const engine = (on: Parameters<TestBody>[1], options: EngineOptions = {}) => {
+  const {
+    taskList = { tasks: [] },
+    tools = TOOLS,
+    files = FILES,
+    environment = { language: 'Portugues (PT-BR)' },
+  } = options
   const opened: string[] = []
   let lists = 0
   on('tool.list', () => ({ value: tools.map(name => ({ name, description: name, mcp: false })) }))
@@ -84,6 +94,10 @@ const engine = (
       return { result: { task: { id: '42', subject: String((e as { subject?: unknown }).subject) } } }
     return { result: { success: true } }
   })
+  on('settings.read', () => ({ value: { language: environment.language } as never }))
+  on('ui.invalidate', () => ({ value: undefined }))
+  on('ui.log', () => ({ value: undefined }))
+  on('env.get', (_, e) => ({ value: e.name === 'LANG' ? environment.lang : undefined }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   return Object.assign(opened, { lists: () => lists })
 }
@@ -132,7 +146,7 @@ test('live run: skill + TaskCreate/TaskUpdate change the pane, and the spinner t
 })
 
 test('/sp status and /sp sync', async ($, on) => {
-  engine(on, { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] })
+  engine(on, { taskList: { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] } })
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const sync = await $.command.run({ ...RUN, command: 'sp', args: 'sync' })
@@ -143,11 +157,11 @@ test('/sp status and /sp sync', async ($, on) => {
   expect(status.text).toContain('  · 2026-10-03-auth.md  1/3')
   expect(status.text).toContain('  · 2026-09-02-hotfix.md  sem tasks.json')
   const usage = await $.command.run({ ...RUN, command: 'sp', args: 'xyz' })
-  expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync')
+  expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync · /sp lang [pt-BR|en|auto]')
 })
 
 test('TaskList denied during backfill flags a partial sync', async ($, on) => {
-  engine(on, 'deny')
+  engine(on, { taskList: 'deny' })
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
@@ -155,7 +169,7 @@ test('TaskList denied during backfill flags a partial sync', async ($, on) => {
 })
 
 test('session without the TaskList tool does not flag a partial sync', async ($, on) => {
-  engine(on, { tasks: [] }, ['Skill', 'Read', 'Write', 'Edit'])
+  engine(on, { tools: ['Skill', 'Read', 'Write', 'Edit'] })
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
@@ -191,7 +205,7 @@ test('clicking a plan opens its detail card; ✕ fechar removes it', async ($, o
 })
 
 test('the done group expands; an unknown panel message changes nothing', async ($, on) => {
-  engine(on, { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] })
+  engine(on, { taskList: { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] } })
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
@@ -217,7 +231,7 @@ test('classic.SessionStart watches docs/superpowers and keeps the paths of other
 
 test('classic.FileChanged in docs/superpowers rescans (another session finished the plan)', async ($, on) => {
   const files = { ...FILES }
-  engine(on, { tasks: [] }, TOOLS, files)
+  engine(on, { files })
   on('classic.FileChanged', () => ({}))
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -273,4 +287,44 @@ test('a surface without Client draws the text view', async ($, on) => {
     expect(await ui.find({ type: 'Text', text: '  · 2026-10-03-auth.md  1/3' })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('English setting renders the panel and /sp status in English', async ($, on) => {
+  engine(on, {
+    taskList: { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] },
+    environment: { language: 'English' },
+  })
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
+  expect(status.text?.split('\n')[0]).toBe('Phase: —')
+  expect(status.text).toContain('Up next')
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: 'Project', in: 'panel' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('no language setting and no LANG falls back to English', async ($, on) => {
+  engine(on, { environment: {} })
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const sync = await $.command.run({ ...RUN, command: 'sp', args: 'sync' })
+  expect(sync.text).toBe('Superpowers: synced.')
+})
+
+test('/sp lang forces, reports and resets the language', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const current = await $.command.run({ ...RUN, command: 'sp', args: 'lang' })
+  expect(current.text).toBe('Idioma: pt-BR (automático) · /sp lang pt-BR|en|auto')
+  const forced = await $.command.run({ ...RUN, command: 'sp', args: 'lang en' })
+  expect(forced.text).toBe('Panel language: English (en).')
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: 'Project', in: 'panel' })).toBeDefined()
+  await ui.unmount()
+  const bad = await $.command.run({ ...RUN, command: 'sp', args: 'lang fr' })
+  expect(bad.text).toBe('Usage: /sp lang pt-BR|en|auto')
+  const reset = await $.command.run({ ...RUN, command: 'sp', args: 'lang auto' })
+  expect(reset.text).toBe('Idioma do painel: português (pt-BR), automático.')
 })
