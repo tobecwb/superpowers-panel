@@ -28,7 +28,7 @@
     {
       "id": 3,
       "subject": "Task 3: Lint nas funções puras",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Eliminar non-null assertions, ternários aninhados e complexidade excessiva de `hooks/parse.ts`, `hooks/live.ts`, `hooks/link.ts` e `hooks/summary.ts`, sem mudar resultados.\n\n**Files:**\n- Modify: `hooks/parse.ts`, `hooks/live.ts`, `hooks/link.ts`, `hooks/summary.ts`\n\n**Acceptance Criteria:**\n- [ ] `bunx biome lint hooks/parse.ts hooks/live.ts hooks/link.ts hooks/summary.ts` sai com código 0\n- [ ] `bun run typecheck && bun run test` saem com código 0 (48 pass), sem alterar nenhuma asserção\n\n**Verify:** `bunx biome lint hooks/parse.ts hooks/live.ts hooks/link.ts hooks/summary.ts && bun run typecheck && bun run test` → sem diagnósticos, `48 pass`\n\n```json:metadata\n{\"files\": [\"hooks/link.ts\", \"hooks/live.ts\", \"hooks/parse.ts\", \"hooks/summary.ts\"], \"verifyCommand\": \"bunx biome lint hooks/parse.ts hooks/live.ts hooks/link.ts hooks/summary.ts && bun run typecheck && bun run test\", \"acceptanceCriteria\": [\"`bunx biome lint hooks/parse.ts hooks/live.ts hooks/link.ts hooks/summary.ts` sai com código 0\", \"`bun run typecheck && bun run test` saem com código 0 (48 pass), sem alterar nenhuma asserção\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         2
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:23:53-03:00"
+  "lastUpdated": "2026-10-28T11:26:25-03:00"
 }
