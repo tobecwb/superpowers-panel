@@ -57,7 +57,7 @@ test('textView in Portuguese', async () => {
       '⚠ 1 spec sem plano',
       '  · 2026-01-01-billing-design.md',
       '◐ 1 plano incompleto',
-      '  · 2026-01-02-auth.md  1/2',
+      '  ▶ 2026-01-02-auth.md  █████░░░░░ 1/2 · T1',
       '⚠ 1 plano sem spec',
       '  · 2026-01-02-auth.md',
     ].join('\n'),

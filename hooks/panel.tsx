@@ -28,6 +28,8 @@ type Draw = { elements: ClientElements; motion: Motion; columns: number; send: (
 const FALLBACK_COLUMNS = 40
 // Round border plus one cell of padding on each side of the header card.
 const CARD_CHROME = 4
+// Short and fixed, so the plan names keep the width of a narrow pane.
+const ITEM_BAR_CELLS = 8
 
 const ROW_COLOR: Record<RowKind, Color | undefined> = {
   running: 'claude',
@@ -156,23 +158,47 @@ const doneView = (draw: Draw): RenderElement | false => {
 
 const itemLabel = (item: SectionItem): string => `  · ${item.label}${item.note === undefined ? '' : `  ${item.note}`}`
 
-const itemView = (draw: Draw, item: SectionItem): RenderElement => {
+const itemIcon = (motion: Motion, item: SectionItem): string => {
+  if (item.activity === 'running') return spinnerFrame(motion)
+  return item.activity ? KIND_ICON[item.activity] : '·'
+}
+
+const itemBar = (draw: Draw, progress: { done: number; total: number }): RenderElement[] => {
+  const { Text } = draw.elements
+  const { filled, empty } = barCells(progress.done, progress.total, ITEM_BAR_CELLS)
+  return [
+    <Text key="filled" color="success">
+      {'▰'.repeat(filled)}
+    </Text>,
+    <Text key="empty" color="subtle">
+      {'▱'.repeat(empty)}
+    </Text>,
+  ]
+}
+
+const planItemView = (draw: Draw, item: SectionItem, planPath: string): RenderElement => {
   const { Text, Button } = draw.elements
-  const planPath = item.planPath
-  if (planPath === undefined) {
-    return (
-      <Text key={item.key} dimColor>
-        {itemLabel(item)}
-      </Text>
-    )
-  }
+  const color = item.activity ? ROW_COLOR[item.activity] : undefined
+  const gap = item.progress || item.note !== undefined ? '  ' : ''
   return (
-    <Button
-      key={item.key}
-      label={itemLabel(item)}
-      onPress={() => draw.send({ action: 'select', key: planPath })}
-      plain
-    />
+    <Button key={item.key} onPress={() => draw.send({ action: 'select', key: planPath })} plain>
+      <Text color={color} bold={item.activity !== undefined}>{`  ${itemIcon(draw.motion, item)} `}</Text>
+      <Text bold={item.activity !== undefined}>{`${item.label}${gap}`}</Text>
+      {item.progress && itemBar(draw, item.progress)}
+      {item.note !== undefined && <Text dimColor>{`${item.progress ? ' ' : ''}${item.note}`}</Text>}
+      {item.current !== undefined && <Text color={color}>{` · ${item.current}`}</Text>}
+    </Button>
+  )
+}
+
+const itemView = (draw: Draw, item: SectionItem): RenderElement => {
+  const planPath = item.planPath
+  if (planPath !== undefined) return planItemView(draw, item, planPath)
+  const { Text } = draw.elements
+  return (
+    <Text key={item.key} dimColor>
+      {itemLabel(item)}
+    </Text>
   )
 }
 

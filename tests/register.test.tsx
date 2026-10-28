@@ -154,7 +154,7 @@ test('/sp status and /sp sync', async ($, on) => {
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
   expect(status.text?.split('\n')[0]).toBe('Fase: —')
   expect(status.text).toContain('Próximas')
-  expect(status.text).toContain('  · 2026-10-03-auth.md  1/3')
+  expect(status.text).toContain('  · 2026-10-03-auth.md  ███░░░░░░░ 1/3')
   expect(status.text).toContain('  · 2026-09-02-hotfix.md  sem tasks.json')
   const usage = await $.command.run({ ...RUN, command: 'sp', args: 'xyz' })
   expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync · /sp lang [pt-BR|en|auto]')
@@ -187,7 +187,7 @@ test('clicking a plan opens its detail card; ✕ fechar removes it', async ($, o
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const key = 'plan:docs/superpowers/plans/2026-10-03-auth.md'
   const specLine = () => ui.find({ type: 'Text', text: /^Spec:/, in: 'panel' })
-  expect((await ui.find({ key, in: 'panel' }))?.text).toBe('  · 2026-10-03-auth.md  1/3')
+  expect((await ui.find({ key, in: 'panel' }))?.text).toBe('  · 2026-10-03-auth.md  ▰▰▰▱▱▱▱▱ 1/3')
   expect(await specLine()).toBeUndefined()
 
   await ui.press({ key })
@@ -249,7 +249,7 @@ test('classic.FileChanged in docs/superpowers rescans (another session finished 
     await settle()
     text = (await $.command.run({ ...RUN, command: 'sp', args: 'status' })).text ?? ''
   }
-  expect(text).toContain('✓ 1 plano concluído\n  · 2026-10-03-auth.md  3/3')
+  expect(text).toContain('✓ 1 plano concluído\n  · 2026-10-03-auth.md  ██████████ 3/3')
 })
 
 test('classic.FileChanged outside docs/superpowers does not rescan', async ($, on) => {
@@ -288,7 +288,7 @@ test('a surface without Client draws the text view', async ($, on) => {
   for (const surface of ['vscode', 'mobile'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect((await ui.find({ type: 'Text', text: /^Fase:/ }))?.text).toBe('Fase: —')
-    expect(await ui.find({ type: 'Text', text: '  · 2026-10-03-auth.md  1/3' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: '  · 2026-10-03-auth.md  ███░░░░░░░ 1/3' })).toBeDefined()
     await ui.unmount()
   }
 })
@@ -364,6 +364,27 @@ test('command.describe follows the session language', async ($, on) => {
   expect(portuguese.description).not.toBe(english.description)
   expect(portuguese.description).toBe('Painel superpowers: /sp, /sp status, /sp sync, /sp lang')
   expect(english.description).toBe('Superpowers panel: /sp, /sp status, /sp sync, /sp lang')
+})
+
+test('every plan in the project list keeps its own progress bar; a running plan spins', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  await $.tool.call({
+    tool: 'Skill',
+    skill: 'superpowers-extended-cc:executing-plans',
+    args: 'docs/superpowers/plans/2026-10-03-auth.md',
+  })
+  await $.tool.call({ tool: 'TaskCreate', subject: 'Task 1: Refresh', description: '' })
+  await $.tool.call({ tool: 'TaskUpdate', taskId: '42', status: 'in_progress' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const key = 'plan:docs/superpowers/plans/2026-10-03-auth.md'
+  const item = async () => (await ui.find({ key, in: 'panel' }))?.text ?? ''
+  expect(await ui.find({ type: 'Text', text: /^▰+$/, in: 'panel' })).toBeDefined()
+  expect(await item()).toMatch(/^ {2}⠋ 2026-10-03-auth\.md {2}▰▰▰▱▱▱▱▱ 1\/3 · T1$/)
+  await ui.advance(80)
+  expect(await item()).toContain('⠙ 2026-10-03-auth.md')
+  await ui.unmount()
 })
 
 test('the progress bar fits the region width instead of following its content', async ($, on) => {

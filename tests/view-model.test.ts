@@ -105,11 +105,50 @@ test('buildPanel project sections, keys and tones', async () => {
     { key: 'spec:docs/superpowers/specs/2026-01-01-billing-design.md', label: '2026-01-01-billing-design.md' },
   ])
   expect(model.sections[1]!.items).toEqual([
-    { key: `plan:${AUTH}`, label: '2026-01-02-auth.md', planPath: AUTH, note: '1/5' },
+    {
+      key: `plan:${AUTH}`,
+      label: '2026-01-02-auth.md',
+      planPath: AUTH,
+      note: '1/5',
+      progress: { done: 1, total: 5 },
+      activity: 'running',
+      current: 'T1',
+    },
     { key: `plan:${HOTFIX}`, label: '2026-01-03-hotfix.md', planPath: HOTFIX, note: 'sem tasks.json' },
   ])
   expect(model.sections[2]!.items).toEqual([
     { key: `nospec:${HOTFIX}`, label: '2026-01-03-hotfix.md', planPath: HOTFIX },
+  ])
+})
+
+test('buildPanel marks running and gated plans and lists them first', async () => {
+  const plan = (date: string, tasks: PlanTask[]): Project['plans'][number] => ({
+    path: `docs/superpowers/plans/${date}-p.md`,
+    slug: 'p',
+    date,
+    tasksFile: 'ok',
+    tasks,
+  })
+  const project: Project = {
+    hasSuperpowersDir: true,
+    scannedAt: 1,
+    specs: [],
+    plans: [
+      plan('2026-01-01', [
+        planTask(0, 'completed'),
+        planTask(1, 'pending', { blockedBy: [3] }),
+        planTask(3, 'pending'),
+      ]),
+      plan('2026-01-02', [planTask(0, 'completed'), planTask(1, 'pending', { userGate: true })]),
+      plan('2026-01-03', [planTask(0, 'completed'), planTask(4, 'in_progress'), planTask(5, 'pending')]),
+    ],
+  }
+  const model = buildPanel({ project, live: { sessionTasks: {} }, ui: UI, messages: PT })
+  const incomplete = model.sections.find(section => section.id === 'incomplete')!
+  expect(incomplete.items.map(item => [item.label, item.activity, item.current, item.progress])).toEqual([
+    ['2026-01-03-p.md', 'running', 'T4', { done: 1, total: 3 }],
+    ['2026-01-02-p.md', 'gate', 'T1', { done: 1, total: 2 }],
+    ['2026-01-01-p.md', undefined, undefined, { done: 1, total: 3 }],
   ])
 })
 
@@ -120,6 +159,7 @@ test('buildPanel complete section is collapsible and follows the expanded list',
   }
   const closed = buildPanel({ project: done, live: { sessionTasks: {} }, ui: UI, messages: PT })
   const complete = closed.sections.find(section => section.id === 'complete')!
+  expect(complete.items[0]?.progress).toEqual({ done: 1, total: 1 })
   expect([complete.header, complete.tone, complete.collapsible, complete.expanded]).toEqual([
     '1 plano concluído',
     'success',

@@ -23,7 +23,8 @@ export type Motion = {
 }
 
 export const isSpinning = (model: PanelModel): boolean =>
-  [...model.now, ...model.outside].some(row => row.kind === 'running')
+  [...model.now, ...model.outside].some(row => row.kind === 'running') ||
+  model.sections.some(section => section.items.some(item => item.activity === 'running'))
 
 const planName = (model: PanelModel): string | undefined => model.header.plan?.name
 

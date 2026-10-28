@@ -19,7 +19,18 @@ type Header = {
 
 type SectionId = 'specsWithoutPlan' | 'incomplete' | 'withoutSpec' | 'complete'
 
-export type SectionItem = { key: string; label: string; note?: string; planPath?: string }
+type PlanActivity = 'running' | 'gate'
+
+export type SectionItem = {
+  key: string
+  label: string
+  note?: string
+  planPath?: string
+  progress?: { done: number; total: number }
+  activity?: PlanActivity
+  // The task that sets the activity, as `T11`.
+  current?: string
+}
 
 export type Section = {
   id: SectionId
@@ -133,6 +144,28 @@ const planItem = (prefix: string, plan: PlanView, note: string | undefined): Sec
   ...(note === undefined ? {} : { note }),
 })
 
+const activityOf = (plan: PlanView): Pick<SectionItem, 'activity' | 'current'> => {
+  const groups = groupTasks(plan.tasks)
+  const running = groups.running[0]
+  if (running) return { activity: 'running', current: `T${running.id}` }
+  const gate = groups.pending.find(task => task.userGate)
+  return gate ? { activity: 'gate', current: `T${gate.id}` } : {}
+}
+
+const progressItem = (plan: PlanView, messages: Messages): SectionItem => ({
+  ...planItem('plan', plan, planNote(plan, messages)),
+  ...(plan.tasksFile === 'ok' ? { progress: { done: plan.done, total: plan.total } } : {}),
+  ...activityOf(plan),
+})
+
+const ACTIVITY_RANK: Record<PlanActivity, number> = { running: 0, gate: 1 }
+
+const activityRank = (item: SectionItem): number => (item.activity ? ACTIVITY_RANK[item.activity] : 2)
+
+// Array.prototype.sort is stable, so plans with the same activity keep their date order.
+const byActivity = (items: SectionItem[]): SectionItem[] =>
+  items.sort((left, right) => activityRank(left) - activityRank(right))
+
 const projectSections = (derived: Derived, ui: UiState, messages: Messages): Section[] => {
   const sections: Omit<Section, 'expanded'>[] = [
     {
@@ -149,7 +182,7 @@ const projectSections = (derived: Derived, ui: UiState, messages: Messages): Sec
       header: messages.incompletePlans(derived.incomplete.length),
       tone: 'suggestion',
       collapsible: false,
-      items: derived.incomplete.map(plan => planItem('plan', plan, planNote(plan, messages))),
+      items: byActivity(derived.incomplete.map(plan => progressItem(plan, messages))),
     },
     {
       id: 'withoutSpec',
@@ -167,7 +200,7 @@ const projectSections = (derived: Derived, ui: UiState, messages: Messages): Sec
       header: messages.completePlans(derived.complete.length),
       tone: 'success',
       collapsible: true,
-      items: derived.complete.map(plan => planItem('plan', plan, progressNote(plan))),
+      items: derived.complete.map(plan => progressItem(plan, messages)),
     },
   ]
   return sections
