@@ -62,8 +62,24 @@ test('summarize completo', async () => {
     '⚠ 1 spec(s) sem plano',
     '  · 2026-01-01-billing-design.md',
     '◐ 1 plano(s) incompleto(s)',
-    '  · 2026-01-02-auth.md  1/2',
+    '  · 2026-01-02-auth.md  █████░░░░░ 1/2',
     '⚠ 1 plano(s) sem spec',
     '  · 2026-01-02-auth.md',
   ].join('\n'))
+})
+
+test('summarize: itens do PROJETO com barra; rótulo quando sem tasks.json', async () => {
+  const project: Project = {
+    hasSuperpowersDir: true,
+    scannedAt: 1,
+    specs: [],
+    plans: [
+      { path: 'docs/superpowers/plans/2026-01-02-auth.md', slug: 'auth', date: '2026-01-02', tasksFile: 'ok', tasks: [t(0, 'completed'), t(1, 'completed')] },
+      { path: 'docs/superpowers/plans/2026-01-03-hotfix.md', slug: 'hotfix', date: '2026-01-03', tasksFile: 'missing', tasks: [] },
+    ],
+  }
+  const live: Live = { sessionTasks: {} }
+  const text = summarize(derive(project, live), project, live)
+  expect(text).toContain('◐ 1 plano(s) incompleto(s)\n  · 2026-01-03-hotfix.md  sem tasks.json')
+  expect(text).toContain('✓ 1 plano(s) concluído(s)\n  · 2026-01-02-auth.md  ██████████ 2/2')
 })

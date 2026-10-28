@@ -3,7 +3,7 @@ import type { BoxProps, ButtonProps, ElementConstructor, RenderElement, TextProp
 import type { Live, Project } from '../types'
 import { derive, groupTasks } from './link'
 import {
-  baseName, incompleteItem, isEmpty, phaseLine, planLine, sessionLine, taskLine, withoutSpecItem,
+  baseName, completeItem, incompleteItem, isEmpty, phaseLine, planLine, sessionLine, taskLine, withoutSpecItem,
 } from './summary'
 
 export type PaneElements = {
@@ -81,7 +81,7 @@ export const paneView = (
         {derived.complete.length > 0 && (
           <Button key="complete" label={`${showComplete ? '▾' : '▸'} ✓ ${derived.complete.length} plano(s) concluído(s)`} onPress={toggle('complete')} plain />
         )}
-        {showComplete && derived.complete.map(plan => <Text dimColor>{`  · ${baseName(plan.path)}`}</Text>)}
+        {showComplete && derived.complete.map(plan => <Text dimColor>{completeItem(plan)}</Text>)}
       </Box>
     </Box>
   )

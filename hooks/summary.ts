@@ -34,11 +34,14 @@ export const sessionLine = (task: SessionTask): string => {
 
 export const phaseLine = (live: Live): string => `Fase: ${live.phase ? `▶ ${live.phase}` : '—'}`
 
-export const planLine = (plan: PlanView): string =>
-  `Plano: ${baseName(plan.path)}  ${bar(plan.done, plan.total)} ${plan.done}/${plan.total}`
+const progress = (plan: PlanView): string => `${bar(plan.done, plan.total)} ${plan.done}/${plan.total}`
+
+export const planLine = (plan: PlanView): string => `Plano: ${baseName(plan.path)}  ${progress(plan)}`
 
 export const incompleteItem = (plan: PlanView): string =>
-  `  · ${baseName(plan.path)}  ${plan.label ?? `${plan.done}/${plan.total}`}`
+  `  · ${baseName(plan.path)}  ${plan.label ?? progress(plan)}`
+
+export const completeItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${progress(plan)}`
 
 export const withoutSpecItem = (plan: PlanView): string =>
   `  · ${baseName(plan.path)}${plan.specMissing ? '  (spec ausente)' : ''}`
@@ -75,7 +78,7 @@ export const summarize = (derived: Derived, project: Project, live: Live): strin
   }
   if (derived.complete.length > 0) {
     lines.push(`✓ ${derived.complete.length} plano(s) concluído(s)`,
-      ...derived.complete.map(plan => `  · ${baseName(plan.path)}`))
+      ...derived.complete.map(completeItem))
   }
   if (lines.length === before) lines.push('Nenhuma spec ou plano ainda.')
   return lines.join('\n')

@@ -108,6 +108,8 @@ test('/sp status e /sp sync', async ($, on) => {
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
   expect(status.text?.split('\n')[0]).toBe('Fase: —')
   expect(status.text).toContain('PLANO ATUAL')
+  expect(status.text).toContain('  · 2026-10-03-auth.md  ███░░░░░░░ 1/3')
+  expect(status.text).toContain('  · 2026-09-02-hotfix.md  sem tasks.json')
   const usage = await $.command.run({ ...RUN, command: 'sp', args: 'xyz' })
   expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync')
 })
