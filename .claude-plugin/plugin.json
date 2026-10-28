@@ -2,5 +2,9 @@
   "name": "superpowers-panel",
   "version": "0.1.0",
   "description": "Painel ao vivo do fluxo superpowers-extended-cc: tarefas, planos e specs",
+  "author": { "name": "tobecwb", "url": "https://github.com/tobecwb" },
+  "license": "MIT",
+  "homepage": "https://github.com/tobecwb/superpowers-panel",
+  "repository": "https://github.com/tobecwb/superpowers-panel",
   "types": "./types/index.d.ts"
 }
