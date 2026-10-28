@@ -19,7 +19,7 @@
     {
       "id": 2,
       "subject": "Task 2: Código morto e duplicação de `baseName`",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Zerar os achados do Knip, unificar `baseName` num só lugar e eliminar os parâmetros não usados apontados pelo Biome.\n\n**Files:**\n- Modify: `hooks/atoms.ts`, `hooks/link.ts`, `hooks/summary.ts`, `hooks/pane.tsx`, `hooks/register.tsx`, e qualquer arquivo de `hooks/`/`types/` que o Knip apontar\n\n**Acceptance Criteria:**\n- [ ] `bun run deadcode` sai com código 0\n- [ ] `grep -rn \"const baseName\" hooks/` retorna exatamente uma linha (`hooks/link.ts`)\n- [ ] `bunx biome lint . 2>&1 | grep -c noUnusedFunctionParameters` imprime `0`\n- [ ] `bun run typecheck && bun run test` saem com código 0 (48 pass)\n\n**Verify:** `bun run deadcode && bun run typecheck && bun run test && grep -rn \"const baseName\" hooks/` → knip sem achados, `48 pass`, uma linha em `hooks/link.ts`\n\n```json:metadata\n{\"files\": [\"hooks/atoms.ts\", \"hooks/link.ts\", \"hooks/pane.tsx\", \"hooks/register.tsx\", \"hooks/summary.ts\"], \"verifyCommand\": \"bun run deadcode && bun run typecheck && bun run test && grep -rn \\\"const baseName\\\" hooks/\", \"acceptanceCriteria\": [\"`bun run deadcode` sai com código 0\", \"`grep -rn \\\"const baseName\\\" hooks/` retorna exatamente uma linha (`hooks/link.ts`)\", \"`bunx biome lint . 2>&1 | grep -c noUnusedFunctionParameters` imprime `0`\", \"`bun run typecheck && bun run test` saem com código 0 (48 pass)\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         1
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:22:10-03:00"
+  "lastUpdated": "2026-10-28T11:23:53-03:00"
 }
