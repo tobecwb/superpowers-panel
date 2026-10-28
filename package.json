@@ -3,15 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -p .",
+    "typecheck": "tsc -p . && tsc -p scripts",
     "lint": "biome check .",
     "deadcode": "knip",
-    "test": "claude plugin validate . && claude plugin test .",
-    "check": "bun run typecheck && bun run lint && bun run deadcode && bun run test",
+    "comments": "bun scripts/check-comments.ts",
+    "test": "claude plugin validate . && claude plugin test . && bun test ./scripts",
+    "check": "bun run typecheck && bun run lint && bun run deadcode && bun run comments && bun run test",
     "fix": "biome check --write ."
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
+    "@types/bun": "1.4.4",
     "knip": "6.43.0",
     "typescript": "5.9.3"
   }
