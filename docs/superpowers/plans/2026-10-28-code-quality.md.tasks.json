@@ -4,7 +4,7 @@
     {
       "id": 0,
       "subject": "Task 0: Ferramentas em modo relatório",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Adicionar `package.json`, `biome.json` e `knip.json`, instalar as devDependencies e expor scripts separados, com typecheck e testes verdes e lint/deadcode rodando (com violações, por enquanto).\n\n**Files:**\n- Create: `package.json`, `biome.json`, `knip.json`, `bun.lock` (gerado)\n- Modify: `.gitignore`, `README.md` (seção \"Desenvolvimento\")\n\n**Acceptance Criteria:**\n- [ ] `bun install` conclui e gera `bun.lock`; `node_modules/` aparece ignorado em `git status`\n- [ ] `bun run typecheck` sai com código 0 (TypeScript 5.9.3)\n- [ ] `bun run test` sai com código 0: validate passa e `claude plugin test` mostra 48 pass / 0 fail\n- [ ] `bunx biome check .` roda sem erro de **configuração** (violações de lint/format são esperadas aqui)\n- [ ] `bunx knip` roda sem erro de configuração (achados são esperados aqui)\n- [ ] O README não menciona mais `npx -y -p typescript@5.6.3`\n\n**Verify:** `bun install && bun run typecheck && bun run test` → tsc sem saída, `48 pass`, `0 fail`\n\n```json:metadata\n{\"files\": [\".gitignore\", \"README.md\", \"biome.json\", \"bun.lock\", \"knip.json\", \"package.json\"], \"verifyCommand\": \"bun install && bun run typecheck && bun run test\", \"acceptanceCriteria\": [\"`bun install` conclui e gera `bun.lock`; `node_modules/` aparece ignorado em `git status`\", \"`bun run typecheck` sai com código 0 (TypeScript 5.9.3)\", \"`bun run test` sai com código 0: validate passa e `claude plugin test` mostra 48 pass / 0 fail\", \"`bunx biome check .` roda sem erro de **configuração** (violações de lint/format são esperadas aqui)\", \"`bunx knip` roda sem erro de configuração (achados são esperados aqui)\", \"O README não menciona mais `npx -y -p typescript@5.6.3`\"], \"modelTier\": \"standard\"}\n```"
     },
     {
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:13:55-03:00"
+  "lastUpdated": "2026-10-28T11:19:33-03:00"
 }
