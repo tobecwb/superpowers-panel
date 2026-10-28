@@ -46,7 +46,7 @@
     {
       "id": 5,
       "subject": "Task 5: Nomes descritivos",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Trocar abreviações de 1 a 3 letras por nomes descritivos em `hooks/` e `tests/`, preservando `$`, `e`, `next` e índices de laço `i`.\n\n**Files:**\n- Modify: `hooks/live.ts`, `hooks/link.ts`, `hooks/register.tsx`, `hooks/scan.ts`, `hooks/summary.ts`, `tests/link.test.ts`, `tests/scan.test.ts`, `tests/summary.test.ts`, `tests/register.test.tsx`\n\n**Acceptance Criteria:**\n- [ ] `grep -nE '\\b(str|strs|ran|acc|dep|one|arg)\\b' hooks/*.ts*` não retorna nada\n- [ ] `grep -nE '^\\s*const [a-zA-Z]{1} |^const P ' tests/*.ts*` não retorna nada\n- [ ] `bun run lint && bun run typecheck && bun run test` saem com código 0 (50 pass)\n\n**Verify:** `! grep -nE '\\b(str|strs|ran|acc|dep|one|arg)\\b' hooks/*.ts* && bun run lint && bun run typecheck && bun run test` → grep vazio, `50 pass`\n\n```json:metadata\n{\"files\": [\"hooks/link.ts\", \"hooks/live.ts\", \"hooks/register.tsx\", \"hooks/scan.ts\", \"hooks/summary.ts\", \"tests/link.test.ts\", \"tests/register.test.tsx\", \"tests/scan.test.ts\", \"tests/summary.test.ts\"], \"verifyCommand\": \"! grep -nE '\\\\b(str|strs|ran|acc|dep|one|arg)\\\\b' hooks/*.ts* && bun run lint && bun run typecheck && bun run test\", \"acceptanceCriteria\": [\"`grep -nE '\\\\b(str|strs|ran|acc|dep|one|arg)\\\\b' hooks/*.ts*` não retorna nada\", \"`grep -nE '^\\\\s*const [a-zA-Z]{1} |^const P ' tests/*.ts*` não retorna nada\", \"`bun run lint && bun run typecheck && bun run test` saem com código 0 (50 pass)\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         4
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:30:03-03:00"
+  "lastUpdated": "2026-10-28T11:33:04-03:00"
 }
