@@ -70,8 +70,13 @@ export const groupTasks = (tasks: readonly PlanTask[]): TaskGroups => ({
   done: tasks.filter(task => task.status === 'completed'),
 })
 
-const labelOf = (plan: Plan): string | undefined =>
-  plan.tasksFile === 'missing' ? 'sem tasks.json' : plan.tasksFile === 'invalid' ? 'tasks.json inválido' : undefined
+const TASKS_FILE_LABEL: Record<Plan['tasksFile'], string | undefined> = {
+  ok: undefined,
+  missing: 'sem tasks.json',
+  invalid: 'tasks.json inválido',
+}
+
+const labelOf = (plan: Plan): string | undefined => TASKS_FILE_LABEL[plan.tasksFile]
 
 export const derive = (project: Project, live: Live): Derived => {
   const activePath = activePlanPath(project.plans, live)

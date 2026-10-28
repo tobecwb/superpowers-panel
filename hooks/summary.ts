@@ -1,4 +1,4 @@
-import type { Live, PlanTask, Project, SessionTask } from '../types'
+import type { Live, PlanTask, Project, SessionTask, TaskStatus } from '../types'
 import { baseName, type Derived, groupTasks, isBlocked, type PlanView } from './link'
 
 const CELLS = 10
@@ -25,10 +25,9 @@ export const taskLine = (task: PlanTask, tasks: readonly PlanTask[]): string => 
   return `○ ${name}${gate}`
 }
 
-export const sessionLine = (task: SessionTask): string => {
-  const mark = task.status === 'completed' ? '✓' : task.status === 'in_progress' ? '▶' : '○'
-  return `${mark} ${task.subject}`
-}
+const STATUS_MARK: Record<TaskStatus, string> = { completed: '✓', in_progress: '▶', pending: '○' }
+
+export const sessionLine = (task: SessionTask): string => `${STATUS_MARK[task.status]} ${task.subject}`
 
 export const phaseLine = (live: Live): string => `Fase: ${live.phase ? `▶ ${live.phase}` : '—'}`
 
@@ -51,12 +50,11 @@ export const orderedPlanTasks = (plan: PlanView): PlanTask[] => {
   return [...groups.running, ...groups.pending, ...groups.blocked, ...groups.done]
 }
 
-const specLine = (plan: PlanView): string =>
-  plan.spec
-    ? `Spec: ${baseName(plan.spec.path)}`
-    : plan.specMissing
-      ? `Spec: ausente (${plan.specRef ?? ''})`
-      : 'Spec: —'
+const specLine = (plan: PlanView): string => {
+  if (plan.spec) return `Spec: ${baseName(plan.spec.path)}`
+  if (plan.specMissing) return `Spec: ausente (${plan.specRef ?? ''})`
+  return 'Spec: —'
+}
 
 // Cabeçalho, spec e todas as tarefas (concluídas inclusive) de um plano.
 export const detailLines = (plan: PlanView): string[] => [

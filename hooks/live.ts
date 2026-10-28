@@ -87,6 +87,43 @@ export const taskListOf = (result: unknown): SessionTask[] | undefined => {
   })
 }
 
+type UpdateEvent = Extract<LiveEvent, { kind: 'update' }>
+type SkillEvent = Extract<LiveEvent, { kind: 'skill' }>
+type TouchEvent = Extract<LiveEvent, { kind: 'touch' }>
+
+const applyUpdate = (live: Live, event: UpdateEvent): Live => {
+  const { [event.id]: current, ...rest } = live.sessionTasks
+  if (event.status === 'deleted') return { ...live, sessionTasks: rest }
+  // The native ID is never displayed: without a known subject there is nothing to show.
+  if (!current && event.subject === undefined) return live
+  const base: SessionTask = current ?? { id: event.id, subject: event.subject ?? '', status: 'pending', blockedBy: [] }
+  return {
+    ...live,
+    sessionTasks: {
+      ...live.sessionTasks,
+      [event.id]: {
+        ...base,
+        subject: event.subject ?? base.subject,
+        status: event.status === undefined ? base.status : toStatus(event.status),
+        blockedBy: [...new Set([...base.blockedBy, ...event.addBlockedBy])],
+      },
+    },
+  }
+}
+
+const applySkill = (live: Live, event: SkillEvent): Live => {
+  if (!event.skill.startsWith(SKILL_PREFIX)) return live
+  const phase = event.skill.slice(SKILL_PREFIX.length)
+  const plan = PLAN_SKILLS.has(phase) && event.args ? extractPlanPath(event.args) : undefined
+  return { ...live, phase, ...(plan ? { activePlan: plan } : {}) }
+}
+
+const applyTouch = (live: Live, event: TouchEvent): Live => {
+  if (!event.path.endsWith('.tasks.json')) return live
+  const plan = extractPlanPath(event.path)
+  return plan ? { ...live, activePlan: plan } : live
+}
+
 export const applyEvent = (live: Live, event: LiveEvent): Live => {
   switch (event.kind) {
     case 'create':
@@ -97,41 +134,12 @@ export const applyEvent = (live: Live, event: LiveEvent): Live => {
           [event.id]: { id: event.id, subject: event.subject, status: 'pending', blockedBy: [] },
         },
       }
-    case 'update': {
-      const { [event.id]: current, ...rest } = live.sessionTasks
-      if (event.status === 'deleted') return { ...live, sessionTasks: rest }
-      // ID nativo nunca é exibido: sem subject conhecido não há o que mostrar.
-      if (!current && event.subject === undefined) return live
-      const base: SessionTask = current ?? {
-        id: event.id,
-        subject: event.subject ?? '',
-        status: 'pending',
-        blockedBy: [],
-      }
-      return {
-        ...live,
-        sessionTasks: {
-          ...live.sessionTasks,
-          [event.id]: {
-            ...base,
-            subject: event.subject ?? base.subject,
-            status: event.status === undefined ? base.status : toStatus(event.status),
-            blockedBy: [...new Set([...base.blockedBy, ...event.addBlockedBy])],
-          },
-        },
-      }
-    }
-    case 'skill': {
-      if (!event.skill.startsWith(SKILL_PREFIX)) return live
-      const phase = event.skill.slice(SKILL_PREFIX.length)
-      const plan = PLAN_SKILLS.has(phase) && event.args ? extractPlanPath(event.args) : undefined
-      return { ...live, phase, ...(plan ? { activePlan: plan } : {}) }
-    }
-    case 'touch': {
-      if (!event.path.endsWith('.tasks.json')) return live
-      const plan = extractPlanPath(event.path)
-      return plan ? { ...live, activePlan: plan } : live
-    }
+    case 'update':
+      return applyUpdate(live, event)
+    case 'skill':
+      return applySkill(live, event)
+    case 'touch':
+      return applyTouch(live, event)
     case 'snapshot':
       return { ...live, sessionTasks: Object.fromEntries(event.tasks.map(task => [task.id, task])) }
   }
