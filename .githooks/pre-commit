@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks the commit when any quality check fails; enabled by `bun install` (prepare script).
+exec bun run check

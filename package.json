@@ -9,7 +9,8 @@
     "comments": "bun scripts/check-comments.ts",
     "test": "claude plugin validate . && claude plugin test . && bun test ./scripts",
     "check": "bun run typecheck && bun run lint && bun run deadcode && bun run comments && bun run test",
-    "fix": "biome check --write ."
+    "fix": "biome check --write .",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
