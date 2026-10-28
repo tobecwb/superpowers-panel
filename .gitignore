@@ -1,3 +1,5 @@
+# Engine-written types. claude-code/ and claude-code-tools/ are force-added so CI can typecheck
+# (nothing regenerates them without a signed-in session); claude-code-mcp/ lists local MCP servers.
 .claude-plugin/types/
 node_modules/
 .claude/
