@@ -44,3 +44,8 @@ test('flags uppercase accented letters', () => {
 test('parses generic arrow functions in .ts files', () => {
   expect(linesOf('const identity = <T>(value: T) => value // para', 'sample.ts')).toEqual([1])
 })
+
+test('flags unaccented Portuguese words like nunca and falha', () => {
+  expect(isPortuguese('// falha aberta: nunca bloqueia o prompt')).toBe(true)
+  expect(isPortuguese('// failure handling never blocks')).toBe(false)
+})

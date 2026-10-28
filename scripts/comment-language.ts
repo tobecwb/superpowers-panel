@@ -3,7 +3,7 @@ import ts from 'typescript'
 export type CommentFinding = { line: number; text: string }
 
 const ACCENTED = /[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/
-const PORTUGUESE_WORD = /(?<![\p{L}\p{N}_./-])(não|quando|para|sem|com|uma|que|ainda|só)(?![\p{L}\p{N}_])/iu
+const PORTUGUESE_WORD = /(?<![\p{L}\p{N}_./-])(não|quando|para|sem|com|uma|que|ainda|só|nunca|falha)(?![\p{L}\p{N}_])/iu
 
 export const isPortuguese = (comment: string): boolean => ACCENTED.test(comment) || PORTUGUESE_WORD.test(comment)
 

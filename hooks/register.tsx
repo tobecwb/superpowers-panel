@@ -146,14 +146,14 @@ export const register: Register = on => {
     const input = e as unknown as Record<string, unknown>
     await recordToolCall($, tool, input, hookResult.result).catch(error => debug($, error))
     return hookResult
-  }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia a ferramenta
+  }).catch((_$, e, next) => next(e)) // fail open: never blocks the tool
 
   on('prompt.submit', async ($, e, next) => {
     const skill = parsePromptSkill(e.text)
     if (skill)
       await update($, liveAtom, live => applyEvent(live, { kind: 'skill', ...skill })).catch(error => debug($, error))
     return next(e)
-  }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia o prompt
+  }).catch((_$, e, next) => next(e)) // fail open: never blocks the prompt
 
   on('turn.complete', async ($, e, next) => {
     void rescan($).catch(error => debug($, error))
