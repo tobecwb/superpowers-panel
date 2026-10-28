@@ -11,6 +11,7 @@ import {
   TICK_MS,
   withoutFlashing,
 } from './animation'
+import { fitName } from './fit'
 import type { PanelAction } from './panel-action'
 import {
   type Detail,
@@ -30,6 +31,9 @@ const FALLBACK_COLUMNS = 40
 const CARD_CHROME = 4
 // Short and fixed, so the plan names keep the width of a narrow pane.
 const ITEM_BAR_CELLS = 8
+// Indent, icon and the space after it, in front of a plan name in the project list.
+const ITEM_LEAD = 4
+const ITEM_GAP = 2
 
 const ROW_COLOR: Record<RowKind, Color | undefined> = {
   running: 'claude',
@@ -109,7 +113,7 @@ const headerView = (draw: Draw): RenderElement => {
         {phaseBadge(draw)}
         {header.plan && (
           <Text bold wrap="truncate-end">
-            {header.plan.name}
+            {fitName({ full: header.plan.name, short: header.plan.shortName, width: draw.columns - CARD_CHROME })}
           </Text>
         )}
         {header.plan && progressView(draw, header.plan)}
@@ -176,17 +180,37 @@ const itemBar = (draw: Draw, progress: { done: number; total: number }): RenderE
   ]
 }
 
+const noteText = (item: SectionItem): string | undefined =>
+  item.note === undefined ? undefined : `${item.progress ? ' ' : ''}${item.note}`
+
+const currentText = (item: SectionItem): string | undefined =>
+  item.current === undefined ? undefined : ` · ${item.current}`
+
+const itemGap = (item: SectionItem): string => (item.progress || item.note !== undefined ? ' '.repeat(ITEM_GAP) : '')
+
+// Everything on the line but the name keeps its width; the name takes what is left.
+const itemNameWidth = (columns: number, item: SectionItem): number => {
+  const tail = [itemGap(item), noteText(item), currentText(item)].reduce((sum, part) => sum + (part?.length ?? 0), 0)
+  return columns - ITEM_LEAD - (item.progress ? ITEM_BAR_CELLS : 0) - tail
+}
+
 const planItemView = (draw: Draw, item: SectionItem, planPath: string): RenderElement => {
   const { Text, Button } = draw.elements
   const color = item.activity ? ROW_COLOR[item.activity] : undefined
-  const gap = item.progress || item.note !== undefined ? '  ' : ''
+  const name = fitName({
+    full: item.label,
+    short: item.shortLabel ?? item.label,
+    width: itemNameWidth(draw.columns, item),
+  })
+  const note = noteText(item)
+  const current = currentText(item)
   return (
     <Button key={item.key} onPress={() => draw.send({ action: 'select', key: planPath })} plain>
       <Text color={color} bold={item.activity !== undefined}>{`  ${itemIcon(draw.motion, item)} `}</Text>
-      <Text bold={item.activity !== undefined}>{`${item.label}${gap}`}</Text>
+      <Text bold={item.activity !== undefined}>{`${name}${itemGap(item)}`}</Text>
       {item.progress && itemBar(draw, item.progress)}
-      {item.note !== undefined && <Text dimColor>{`${item.progress ? ' ' : ''}${item.note}`}</Text>}
-      {item.current !== undefined && <Text color={color}>{` · ${item.current}`}</Text>}
+      {note !== undefined && <Text dimColor>{note}</Text>}
+      {current !== undefined && <Text color={color}>{current}</Text>}
     </Button>
   )
 }
@@ -227,13 +251,16 @@ const projectView = (draw: Draw): RenderElement => {
   )
 }
 
+// The title shares its line with the progress note, one cell apart.
+const detailTitleWidth = (columns: number, detail: Detail): number => columns - CARD_CHROME - 1 - detail.note.length
+
 const detailView = (draw: Draw, detail: Detail): RenderElement => {
   const { Box, Text, Button } = draw.elements
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="subtle" paddingX={1} marginTop={1}>
       <Box gap={1}>
         <Text bold wrap="truncate-end">
-          {detail.title}
+          {fitName({ full: detail.title, short: detail.shortTitle, width: detailTitleWidth(draw.columns, detail) })}
         </Text>
         <Text dimColor>{detail.note}</Text>
       </Box>

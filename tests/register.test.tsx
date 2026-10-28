@@ -380,10 +380,44 @@ test('every plan in the project list keeps its own progress bar; a running plan 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const key = 'plan:docs/superpowers/plans/2026-10-03-auth.md'
   const item = async () => (await ui.find({ key, in: 'panel' }))?.text ?? ''
+  await ui.resize({ columns: 60, rows: 30, in: 'panel' })
   expect(await ui.find({ type: 'Text', text: /^▰+$/, in: 'panel' })).toBeDefined()
   expect(await item()).toMatch(/^ {2}⠋ 2026-10-03-auth\.md {2}▰▰▰▱▱▱▱▱ 1\/3 · T1$/)
   await ui.advance(80)
   expect(await item()).toContain('⠙ 2026-10-03-auth.md')
+  await ui.unmount()
+})
+
+test('plan names shorten to the slug, then truncate, as the panel narrows', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const item = async () => (await ui.find({ key: 'plan:docs/superpowers/plans/2026-10-03-auth.md', in: 'panel' }))?.text
+  await ui.resize({ columns: 40, rows: 30, in: 'panel' })
+  expect(await item()).toBe('  · 2026-10-03-auth.md  ▰▰▰▱▱▱▱▱ 1/3')
+  await ui.resize({ columns: 30, rows: 30, in: 'panel' })
+  expect(await item()).toBe('  · auth  ▰▰▰▱▱▱▱▱ 1/3')
+  await ui.resize({ columns: 20, rows: 30, in: 'panel' })
+  expect(await item()).toBe('  · a…  ▰▰▰▱▱▱▱▱ 1/3')
+  await ui.unmount()
+})
+
+test('the header and detail cards shorten the plan name too', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  await $.tool.call({
+    tool: 'Skill',
+    skill: 'superpowers-extended-cc:executing-plans',
+    args: 'docs/superpowers/plans/2026-10-03-auth.md',
+  })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'plan:docs/superpowers/plans/2026-10-03-auth.md' })
+  await settle()
+  await ui.resize({ columns: 20, rows: 40, in: 'panel' })
+  expect(await ui.findAll({ type: 'Text', text: /^auth$/, in: 'panel' })).toHaveLength(2)
+  expect(await ui.find({ type: 'Text', text: /^2026-10-03-auth\.md/, in: 'panel' })).toBeUndefined()
   await ui.unmount()
 })
 

@@ -29,7 +29,7 @@ const row = (id: number, kind: Row['kind']): Row => ({ key: `task:${id}`, kind, 
 
 const model = (extra: Partial<PanelModel> = {}): PanelModel => ({
   isEmpty: false,
-  header: { plan: { name: 'auth.md', done: 1, total: 4 } },
+  header: { plan: { name: 'auth.md', shortName: 'auth', done: 1, total: 4 } },
   now: [],
   next: [],
   outside: [],
@@ -85,7 +85,7 @@ test('the spinner turns only while a row runs', async () => {
 
 test('the bar eases to the new progress and then stops', async () => {
   const start = observe(undefined, model())
-  const moved = observe(start, model({ header: { plan: { name: 'auth.md', done: 3, total: 4 } } }))
+  const moved = observe(start, model({ header: { plan: { name: 'auth.md', shortName: 'auth', done: 3, total: 4 } } }))
   expect(moved.shownDone).toBe(1)
   const halfway = step(moved)!
   expect(halfway.shownDone).toBe(2)
@@ -97,7 +97,7 @@ test('the bar eases to the new progress and then stops', async () => {
 test('a completed row flashes for 19 ticks', async () => {
   const start = observe(undefined, model({ now: [{ ...row(1, 'running'), note: 'aguarda você' }] }))
   const done = model({
-    header: { plan: { name: 'auth.md', done: 2, total: 4 } },
+    header: { plan: { name: 'auth.md', shortName: 'auth', done: 2, total: 4 } },
     done: { label: '2', expanded: false, keys: ['task:0', 'task:1'], rows: [] },
   })
   const flashed = observe(start, done)
@@ -112,7 +112,10 @@ test('a completed row flashes for 19 ticks', async () => {
 
 test('a new active plan pulses the border and snaps the bar', async () => {
   const start = observe(undefined, model())
-  const other = observe(start, model({ header: { plan: { name: 'billing.md', done: 3, total: 5 } } }))
+  const other = observe(
+    start,
+    model({ header: { plan: { name: 'billing.md', shortName: 'billing', done: 3, total: 5 } } }),
+  )
   expect(other.pulseTicks).toBe(8)
   expect(other.shownDone).toBe(3)
   expect(run(other, 8).pulseTicks).toBe(0)
