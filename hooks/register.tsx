@@ -253,7 +253,12 @@ export const register: Register = on => {
     if (e.surface === 'terminal' || e.surface === 'desktop') {
       const { Client } = $.ui.resolve(e)
       return (
-        <Client key="panel" module="./panel.tsx" width="100%" props={{ ...model, bodyRows: e.props.scroll.bodyRows }} />
+        <Client
+          key="panel"
+          module="./panel.tsx"
+          width="100%"
+          props={{ ...model, bodyRows: e.props.scroll.bodyRows, surface: e.surface }}
+        />
       )
     }
     const { Box, Text } = $.ui.resolve(e)
