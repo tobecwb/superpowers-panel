@@ -10,7 +10,7 @@
     {
       "id": 1,
       "subject": "Task 1: Formatação única",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Aplicar o formatter e a organização de imports do Biome (assist `organizeImports`, que o `biome check` também cobra) a todo o repositório num commit que só contém formatação e ordem de imports.\n\n**Files:**\n- Modify: `hooks/*.ts(x)`, `tests/*.ts(x)`, `types/index.d.ts`, `tsconfig.json`, `.claude-plugin/plugin.json`, `hooks/hooks.json`, `package.json`, `biome.json`, `knip.json` (o que o formatter tocar)\n\n**Acceptance Criteria:**\n- [ ] `bunx biome check --linter-enabled=false .` sai com código 0 (formatação e imports em ordem)\n- [ ] `bun run typecheck && bun run test` saem com código 0 (48 pass)\n- [ ] O commit não contém nenhuma mudança além de quebras de linha, espaços, vírgulas finais e ordem de imports\n\n**Verify:** `bunx biome check --linter-enabled=false . && bun run typecheck && bun run test` → sem diagnósticos, `48 pass`\n\n```json:metadata\n{\"files\": [\".claude-plugin/plugin.json\", \"biome.json\", \"hooks/hooks.json\", \"knip.json\", \"package.json\", \"tsconfig.json\", \"types/index.d.ts\"], \"verifyCommand\": \"bunx biome check --linter-enabled=false . && bun run typecheck && bun run test\", \"acceptanceCriteria\": [\"`bunx biome check --linter-enabled=false .` sai com código 0 (formatação e imports em ordem)\", \"`bun run typecheck && bun run test` saem com código 0 (48 pass)\", \"O commit não contém nenhuma mudança além de quebras de linha, espaços, vírgulas finais e ordem de imports\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         0
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:19:33-03:00"
+  "lastUpdated": "2026-10-28T11:22:10-03:00"
 }
