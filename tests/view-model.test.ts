@@ -1,0 +1,168 @@
+import { expect, test } from 'claude-code/testing'
+import { messagesFor } from '../hooks/i18n'
+import { buildPanel } from '../hooks/view-model'
+import type { Live, PlanTask, Project } from '../types'
+
+const planTask = (id: number, status: PlanTask['status'], extra: Partial<PlanTask> = {}): PlanTask => ({
+  id,
+  subject: `Task ${id}: Item ${id}`,
+  status,
+  blockedBy: [],
+  userGate: false,
+  ...extra,
+})
+
+const AUTH = 'docs/superpowers/plans/2026-01-02-auth.md'
+const HOTFIX = 'docs/superpowers/plans/2026-01-03-hotfix.md'
+
+const PROJECT: Project = {
+  hasSuperpowersDir: true,
+  scannedAt: 1,
+  specs: [
+    { path: 'docs/superpowers/specs/2026-01-01-auth-design.md', slug: 'auth', date: '2026-01-01' },
+    { path: 'docs/superpowers/specs/2026-01-01-billing-design.md', slug: 'billing', date: '2026-01-01' },
+  ],
+  plans: [
+    {
+      path: AUTH,
+      slug: 'auth',
+      date: '2026-01-02',
+      tasksFile: 'ok',
+      tasks: [
+        planTask(0, 'completed'),
+        planTask(1, 'in_progress'),
+        planTask(2, 'pending', { userGate: true }),
+        planTask(3, 'pending'),
+        planTask(4, 'pending', { blockedBy: [3] }),
+      ],
+    },
+    { path: HOTFIX, slug: 'hotfix', date: '2026-01-03', tasksFile: 'missing', tasks: [] },
+  ],
+}
+
+const LIVE: Live = {
+  phase: 'executing-plans',
+  activePlan: AUTH,
+  sessionTasks: { '9': { id: '9', subject: 'Revisar', status: 'in_progress', blockedBy: [] } },
+}
+
+const UI = { expanded: [] as string[], selected: '' }
+const PT = messagesFor('pt-BR')
+
+test('buildPanel classifies the active plan rows', async () => {
+  const model = buildPanel({ project: PROJECT, live: LIVE, ui: UI, messages: PT })
+  expect(model.now).toEqual([
+    { key: 'task:1', kind: 'running', text: 'T1 Item 1' },
+    { key: 'task:2', kind: 'gate', text: 'T2 Item 2', note: 'aguarda você' },
+  ])
+  expect(model.next).toEqual([
+    { key: 'task:3', kind: 'pending', text: 'T3 Item 3' },
+    { key: 'task:4', kind: 'blocked', text: 'T4 Item 4', note: 'aguarda T3' },
+  ])
+  expect(model.done).toEqual({ label: '1 concluída', expanded: false, keys: ['task:0'], rows: [] })
+  expect(model.outside).toEqual([{ key: 'session:9', kind: 'running', text: 'Revisar' }])
+})
+
+test('buildPanel expands the done group on request', async () => {
+  const model = buildPanel({ project: PROJECT, live: LIVE, ui: { ...UI, expanded: ['done'] }, messages: PT })
+  expect(model.done?.rows).toEqual([{ key: 'task:0', kind: 'done', text: 'T0 Item 0' }])
+})
+
+test('buildPanel header: phase badge, plan progress and warnings', async () => {
+  const model = buildPanel({ project: PROJECT, live: { ...LIVE, syncNote: 'partial' }, ui: UI, messages: PT })
+  expect(model.header).toEqual({
+    phase: { label: 'Executando', tone: 'claude' },
+    plan: { name: '2026-01-02-auth.md', done: 1, total: 5 },
+    syncWarning: '⚠ Algumas tarefas não puderam ser lidas — /sp sync',
+  })
+})
+
+test('buildPanel maps every known phase and keeps unknown ones raw', async () => {
+  const badge = (phase: string) =>
+    buildPanel({ project: PROJECT, live: { ...LIVE, phase }, ui: UI, messages: PT }).header.phase
+  expect(badge('brainstorming')).toEqual({ label: 'Brainstorming', tone: 'planMode' })
+  expect(badge('writing-plans')).toEqual({ label: 'Planejando', tone: 'planMode' })
+  expect(badge('subagent-driven-development')).toEqual({ label: 'Executando', tone: 'claude' })
+  expect(badge('checking-gates')).toEqual({ label: 'Verificando gate', tone: 'permission' })
+  expect(badge('receiving-code-review')).toEqual({ label: 'Em revisão', tone: 'suggestion' })
+  expect(badge('systematic-debugging')).toEqual({ label: 'Depurando', tone: 'error' })
+  expect(badge('onboard')).toEqual({ label: 'onboard', tone: 'subtle' })
+})
+
+test('buildPanel shows a hint when there is no flow', async () => {
+  const model = buildPanel({ project: PROJECT, live: { sessionTasks: {} }, ui: UI, messages: PT })
+  expect(model.header).toEqual({ hint: 'Comece com /superpowers-extended-cc:brainstorming' })
+})
+
+test('buildPanel project sections, keys and tones', async () => {
+  const model = buildPanel({ project: PROJECT, live: LIVE, ui: UI, messages: PT })
+  expect(model.sections.map(section => [section.id, section.icon, section.header, section.tone])).toEqual([
+    ['specsWithoutPlan', '⚠', '1 spec sem plano', 'warning'],
+    ['incomplete', '◐', '2 planos incompletos', 'suggestion'],
+    ['withoutSpec', '⚠', '1 plano sem spec', 'warning'],
+  ])
+  expect(model.sections[0]!.items).toEqual([
+    { key: 'spec:docs/superpowers/specs/2026-01-01-billing-design.md', label: '2026-01-01-billing-design.md' },
+  ])
+  expect(model.sections[1]!.items).toEqual([
+    { key: `plan:${AUTH}`, label: '2026-01-02-auth.md', planPath: AUTH, note: '1/5' },
+    { key: `plan:${HOTFIX}`, label: '2026-01-03-hotfix.md', planPath: HOTFIX, note: 'sem tasks.json' },
+  ])
+  expect(model.sections[2]!.items).toEqual([
+    { key: `nospec:${HOTFIX}`, label: '2026-01-03-hotfix.md', planPath: HOTFIX },
+  ])
+})
+
+test('buildPanel complete section is collapsible and follows the expanded list', async () => {
+  const done: Project = {
+    ...PROJECT,
+    plans: [{ path: AUTH, slug: 'auth', date: '2026-01-02', tasksFile: 'ok', tasks: [planTask(0, 'completed')] }],
+  }
+  const closed = buildPanel({ project: done, live: { sessionTasks: {} }, ui: UI, messages: PT })
+  const complete = closed.sections.find(section => section.id === 'complete')!
+  expect([complete.header, complete.tone, complete.collapsible, complete.expanded]).toEqual([
+    '1 plano concluído',
+    'success',
+    true,
+    false,
+  ])
+  const open = buildPanel({
+    project: done,
+    live: { sessionTasks: {} },
+    ui: { ...UI, expanded: ['complete'] },
+    messages: PT,
+  })
+  expect(open.sections.find(section => section.id === 'complete')!.expanded).toBe(true)
+})
+
+test('buildPanel detail of the selected plan; a vanished selection shows none', async () => {
+  const model = buildPanel({ project: PROJECT, live: LIVE, ui: { ...UI, selected: AUTH }, messages: PT })
+  expect(model.detail?.title).toBe('2026-01-02-auth.md')
+  expect(model.detail?.note).toBe('1/5')
+  expect(model.detail?.specLine).toBe('Spec: 2026-01-01-auth-design.md')
+  expect(model.detail?.rows.map(row => row.key)).toEqual(['task:1', 'task:2', 'task:3', 'task:4', 'task:0'])
+  const gone = buildPanel({ project: PROJECT, live: LIVE, ui: { ...UI, selected: 'docs/x.md' }, messages: PT })
+  expect(gone.detail).toBeUndefined()
+})
+
+test('buildPanel active plan without tasks keeps a zero total', async () => {
+  const model = buildPanel({ project: PROJECT, live: { sessionTasks: {}, activePlan: HOTFIX }, ui: UI, messages: PT })
+  expect(model.header.plan).toEqual({ name: '2026-01-03-hotfix.md', done: 0, total: 0 })
+  expect(model.now).toEqual([])
+  expect(model.done).toBeUndefined()
+})
+
+test('buildPanel in English', async () => {
+  const model = buildPanel({ project: PROJECT, live: LIVE, ui: UI, messages: messagesFor('en') })
+  expect(model.header.phase).toEqual({ label: 'Executing', tone: 'claude' })
+  expect(model.now[1]?.note).toBe('waiting on you')
+  expect(model.next[1]?.note).toBe('waiting on T3')
+  expect(model.sections[1]!.header).toBe('2 incomplete plans')
+  expect(model.labels.next).toBe('Up next')
+})
+
+test('buildPanel flags an empty project', async () => {
+  const empty: Project = { specs: [], plans: [], scannedAt: 0, hasSuperpowersDir: false }
+  expect(buildPanel({ project: empty, live: { sessionTasks: {} }, ui: UI, messages: PT }).isEmpty).toBe(true)
+  expect(buildPanel({ project: PROJECT, live: LIVE, ui: UI, messages: PT }).isEmpty).toBe(false)
+})
