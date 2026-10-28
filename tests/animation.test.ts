@@ -57,6 +57,20 @@ test('isSpinning looks at the running rows only', async () => {
   expect(isSpinning(model({ outside: [{ key: 'session:1', kind: 'running', text: 'Revisar' }] }))).toBe(true)
 })
 
+test('a running plan in the project list keeps the spinner turning', async () => {
+  const section = (activity?: 'running' | 'gate'): PanelModel['sections'][number] => ({
+    id: 'incomplete',
+    icon: '◐',
+    header: '1',
+    tone: 'suggestion',
+    collapsible: false,
+    expanded: true,
+    items: [{ key: 'plan:a', label: 'a.md', ...(activity ? { activity } : {}) }],
+  })
+  expect(isSpinning(model({ sections: [section('gate')] }))).toBe(false)
+  expect(isSpinning(model({ sections: [section('running')] }))).toBe(true)
+})
+
 test('step is idle when nothing moves', async () => {
   expect(step(observe(undefined, model()))).toBeUndefined()
 })

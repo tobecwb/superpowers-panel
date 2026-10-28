@@ -14,7 +14,18 @@ const rowText = (row: Row): string => withNote(`${KIND_ICON[row.kind]} ${row.tex
 const block = (title: string, rows: readonly Row[]): string[] =>
   rows.length === 0 ? [] : ['', title, ...rows.map(rowText)]
 
-const itemText = (item: SectionItem): string => withNote(`  · ${item.label}`, item.note)
+const itemIcon = (item: SectionItem): string => (item.activity ? KIND_ICON[item.activity] : '·')
+
+const itemDetails = (item: SectionItem): string | undefined => {
+  const parts = [
+    item.progress && bar(item.progress.done, item.progress.total),
+    item.note,
+    item.current && `· ${item.current}`,
+  ].filter(part => part !== undefined)
+  return parts.length === 0 ? undefined : parts.join(' ')
+}
+
+const itemText = (item: SectionItem): string => withNote(`  ${itemIcon(item)} ${item.label}`, itemDetails(item))
 
 const sectionText = (section: Section): string[] => [
   `${section.icon} ${section.header}`,
