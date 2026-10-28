@@ -98,7 +98,7 @@ test('buildPanel project sections, keys and tones', async () => {
   const model = buildPanel({ project: PROJECT, live: LIVE, ui: UI, messages: PT })
   expect(model.sections.map(section => [section.id, section.icon, section.header, section.tone])).toEqual([
     ['specsWithoutPlan', '⚠', '1 spec sem plano', 'warning'],
-    ['incomplete', '◐', '2 planos incompletos', 'suggestion'],
+    ['incomplete', '◐', '1 plano incompleto', 'suggestion'],
     ['withoutSpec', '⚠', '1 plano sem spec', 'warning'],
   ])
   expect(model.sections[0]!.items).toEqual([
@@ -114,13 +114,6 @@ test('buildPanel project sections, keys and tones', async () => {
       progress: { done: 1, total: 5 },
       activity: 'running',
       current: 'T1',
-    },
-    {
-      key: `plan:${HOTFIX}`,
-      label: '2026-01-03-hotfix.md',
-      shortLabel: 'hotfix',
-      planPath: HOTFIX,
-      note: 'sem tasks.json',
     },
   ])
   expect(model.sections[2]!.items).toEqual([
@@ -159,6 +152,42 @@ test('buildPanel marks running and gated plans and lists them first', async () =
   ])
 })
 
+test('buildPanel hides plans without tasks.json from the incomplete list, not invalid ones', async () => {
+  const project: Project = {
+    ...PROJECT,
+    plans: [
+      ...PROJECT.plans,
+      {
+        path: 'docs/superpowers/plans/2026-01-04-broken.md',
+        slug: 'broken',
+        date: '2026-01-04',
+        tasksFile: 'invalid',
+        tasks: [],
+      },
+    ],
+  }
+  const model = buildPanel({ project, live: LIVE, ui: UI, messages: PT })
+  const incomplete = model.sections.find(section => section.id === 'incomplete')!
+  expect(incomplete.items.map(item => [item.label, item.note])).toEqual([
+    ['2026-01-02-auth.md', '1/5'],
+    ['2026-01-04-broken.md', 'tasks.json inválido'],
+  ])
+  const withoutSpec = model.sections.find(section => section.id === 'withoutSpec')!
+  expect(withoutSpec.items.map(item => item.label)).toContain('2026-01-03-hotfix.md')
+})
+
+test('buildPanel detail expands its own done group', async () => {
+  const model = buildPanel({
+    project: PROJECT,
+    live: LIVE,
+    ui: { selected: AUTH, expanded: ['detail-done'] },
+    messages: PT,
+  })
+  expect(model.detail?.done?.expanded).toBe(true)
+  expect(model.detail?.done?.rows).toEqual([{ key: 'task:0', kind: 'done', text: 'T0 Item 0' }])
+  expect(model.done?.expanded).toBe(false)
+})
+
 test('buildPanel complete section is collapsible and follows the expanded list', async () => {
   const done: Project = {
     ...PROJECT,
@@ -188,7 +217,8 @@ test('buildPanel detail of the selected plan; a vanished selection shows none', 
   expect(model.detail?.shortTitle).toBe('auth')
   expect(model.detail?.note).toBe('1/5')
   expect(model.detail?.specLine).toBe('Spec: 2026-01-01-auth-design.md')
-  expect(model.detail?.rows.map(row => row.key)).toEqual(['task:1', 'task:2', 'task:3', 'task:4', 'task:0'])
+  expect(model.detail?.rows.map(row => row.key)).toEqual(['task:1', 'task:2', 'task:3', 'task:4'])
+  expect(model.detail?.done).toEqual({ label: '1 concluída', expanded: false, keys: ['task:0'], rows: [] })
   const gone = buildPanel({ project: PROJECT, live: LIVE, ui: { ...UI, selected: 'docs/x.md' }, messages: PT })
   expect(gone.detail).toBeUndefined()
 })
@@ -205,7 +235,7 @@ test('buildPanel in English', async () => {
   expect(model.header.phase).toEqual({ label: 'Executing', tone: 'claude' })
   expect(model.now[1]?.note).toBe('waiting on you')
   expect(model.next[1]?.note).toBe('waiting on T3')
-  expect(model.sections[1]!.header).toBe('2 incomplete plans')
+  expect(model.sections[1]!.header).toBe('1 incomplete plan')
   expect(model.labels.next).toBe('Up next')
 })
 

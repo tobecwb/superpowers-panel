@@ -141,6 +141,12 @@ const languageCommand = async ($: EngineInterface, argument: string) => {
   return { text: messagesFor(await resolveLocale($)).replies.languageSet(choice === 'auto') }
 }
 
+// The detail card sits at the top of the pane: a plan clicked far down a long list would open it out of sight.
+const selectPlan = async ($: EngineInterface, planPath: string) => {
+  const selected = await update($, selectedAtom, current => (current === planPath ? '' : planPath))
+  if (selected !== '') await $.ui.scroll({ in: PANE, to: 'start', block: 'start' }).catch(error => debug($, error))
+}
+
 const takesNoArguments = (subcommand: string): boolean => subcommand === 'sync' || subcommand === 'status'
 
 const togglePane = async ($: EngineInterface) => {
@@ -246,7 +252,9 @@ export const register: Register = on => {
     // fragment), so `'Client' in elements` is always true: the surface tells instead.
     if (e.surface === 'terminal' || e.surface === 'desktop') {
       const { Client } = $.ui.resolve(e)
-      return <Client key="panel" module="./panel.tsx" width="100%" props={model} />
+      return (
+        <Client key="panel" module="./panel.tsx" width="100%" props={{ ...model, bodyRows: e.props.scroll.bodyRows }} />
+      )
     }
     const { Box, Text } = $.ui.resolve(e)
     return (
@@ -263,8 +271,7 @@ export const register: Register = on => {
   on('ui.message', async ($, e, next) => {
     const action = parsePanelAction(e.data)
     if (action?.action === 'toggle') await update($, expandedAtom, list => toggleKey(list, action.key))
-    else if (action?.action === 'select')
-      await update($, selectedAtom, current => (current === action.key ? '' : action.key))
+    else if (action?.action === 'select') await selectPlan($, action.key)
     else debug($, `unknown panel message: ${JSON.stringify(e.data)}`)
     return next(e)
   }).catch((_$, e, next) => next(e))

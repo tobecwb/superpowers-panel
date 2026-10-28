@@ -60,6 +60,7 @@ const engine = (on: Parameters<TestBody>[1], options: EngineOptions = {}) => {
     environment = { language: 'Portugues (PT-BR)' },
   } = options
   const opened: string[] = []
+  const logs: string[] = []
   let lists = 0
   on('tool.list', () => ({ value: tools.map(name => ({ name, description: name, mcp: false })) }))
   on('command.register', () => ({ value: { command: 'sp' } }))
@@ -96,10 +97,13 @@ const engine = (on: Parameters<TestBody>[1], options: EngineOptions = {}) => {
   })
   on('settings.read', () => ({ value: { language: environment.language } as never }))
   on('ui.invalidate', () => ({ value: undefined }))
-  on('ui.log', () => ({ value: undefined }))
+  on('ui.log', (_, e) => {
+    logs.push(e.text)
+    return { value: undefined }
+  })
   on('env.get', (_, e) => ({ value: e.name === 'LANG' ? environment.lang : undefined }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  return Object.assign(opened, { lists: () => lists })
+  return Object.assign(opened, { lists: () => lists, logs: () => logs })
 }
 
 const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } } as const
@@ -155,7 +159,7 @@ test('/sp status and /sp sync', async ($, on) => {
   expect(status.text?.split('\n')[0]).toBe('Fase: —')
   expect(status.text).toContain('Próximas')
   expect(status.text).toContain('  · 2026-10-03-auth.md  ███░░░░░░░ 1/3')
-  expect(status.text).toContain('  · 2026-09-02-hotfix.md  sem tasks.json')
+  expect(status.text).not.toContain('sem tasks.json')
   const usage = await $.command.run({ ...RUN, command: 'sp', args: 'xyz' })
   expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync · /sp lang [pt-BR|en|auto]')
   const syncExtra = await $.command.run({ ...RUN, command: 'sp', args: 'sync foo' })
@@ -180,8 +184,8 @@ test('session without the TaskList tool does not flag a partial sync', async ($,
   expect(status.text).not.toContain('Algumas tarefas')
 })
 
-test('clicking a plan opens its detail card; ✕ fechar removes it', async ($, on) => {
-  engine(on)
+test('clicking a plan opens its detail card at the top and scrolls the pane to it; ✕ removes it', async ($, on) => {
+  const engineHandle = engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
@@ -193,6 +197,15 @@ test('clicking a plan opens its detail card; ✕ fechar removes it', async ($, o
   await ui.press({ key })
   await settle()
   expect((await specLine())?.text).toBe('Spec: 2026-10-01-auth-design.md')
+  // The kit lays out no pane, so `$.ui.scroll` rejects there: the debug line shows the click asked for it.
+  expect(engineHandle.logs().filter(text => text.includes('ui.scroll'))).toHaveLength(1)
+  const texts = (await ui.findAll({ type: 'Text', in: 'panel' })).map(found => found.text)
+  expect(texts.indexOf('Spec: 2026-10-01-auth-design.md')).toBeLessThan(texts.indexOf('Projeto'))
+  expect((await ui.find({ key: 'detail-close', in: 'panel' }))?.text).toBe('✕')
+  expect(await ui.find({ type: 'Text', text: 'T1 Refresh', in: 'panel' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'T0 Login', in: 'panel' })).toBeUndefined()
+  await ui.press({ key: 'detail-done' })
+  await settle()
   expect(await ui.find({ type: 'Text', text: 'T0 Login', in: 'panel' })).toBeDefined()
 
   await ui.press({ key: 'detail-close' })
@@ -270,13 +283,30 @@ test('classic.CwdChanged merges our paths into the list another hook replaces', 
   expect(result.watchPaths).toEqual(['/y', ...OURS])
 })
 
-test('a plan that is both incomplete and without spec keeps one key per list', async ($, on) => {
+test('a plan without tasks.json is hidden from the incomplete list', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const hotfix = 'docs/superpowers/plans/2026-09-02-hotfix.md'
-  expect((await ui.find({ key: `plan:${hotfix}`, in: 'panel' }))?.text).toBe('  · 2026-09-02-hotfix.md  sem tasks.json')
+  expect(await ui.find({ key: `plan:${hotfix}`, in: 'panel' })).toBeUndefined()
+  expect((await ui.find({ type: 'Text', text: /incompleto/, in: 'panel' }))?.text).toBe('◐ 1 plano incompleto')
+  await ui.unmount()
+})
+
+test('a plan that is both incomplete and without spec keeps one key per list', async ($, on) => {
+  const hotfixTasks = `${SUPERPOWERS_DIR}/plans/2026-09-02-hotfix.md.tasks.json`
+  engine(on, {
+    files: {
+      ...FILES,
+      [hotfixTasks]: JSON.stringify({ tasks: [{ id: 0, subject: 'Task 0: Fix', status: 'pending' }] }),
+    },
+  })
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const hotfix = 'docs/superpowers/plans/2026-09-02-hotfix.md'
+  expect((await ui.find({ key: `plan:${hotfix}`, in: 'panel' }))?.text).toBe('  · 2026-09-02-hotfix.md  ▱▱▱▱▱▱▱▱ 0/1')
   expect((await ui.find({ key: `nospec:${hotfix}`, in: 'panel' }))?.text).toBe('  · 2026-09-02-hotfix.md')
   await ui.unmount()
 })
@@ -418,6 +448,25 @@ test('the header and detail cards shorten the plan name too', async ($, on) => {
   await ui.resize({ columns: 20, rows: 40, in: 'panel' })
   expect(await ui.findAll({ type: 'Text', text: /^auth$/, in: 'panel' })).toHaveLength(2)
   expect(await ui.find({ type: 'Text', text: /^2026-10-03-auth\.md/, in: 'panel' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the detail card hints at scrolling only while the panel is taller than the pane', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({
+    ...PANE,
+    surface: 'terminal',
+    props: { ...PANE.props, scroll: { offset: 0, bodyRows: 12 } },
+  })
+  await ui.press({ key: 'plan:docs/superpowers/plans/2026-10-03-auth.md' })
+  await settle()
+  const hint = () => ui.find({ type: 'Text', text: /role para ver mais/, in: 'panel' })
+  await ui.resize({ columns: 60, rows: 12, in: 'panel' })
+  expect(await hint()).toBeUndefined()
+  await ui.resize({ columns: 60, rows: 30, in: 'panel' })
+  expect((await hint())?.text).toBe('↓ role para ver mais')
   await ui.unmount()
 })
 

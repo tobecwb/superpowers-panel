@@ -44,9 +44,17 @@ export type Section = {
   items: SectionItem[]
 }
 
-type DoneGroup = { label: string; expanded: boolean; keys: string[]; rows: Row[] }
+export type DoneGroup = { label: string; expanded: boolean; keys: string[]; rows: Row[] }
 
-export type Detail = { path: string; title: string; shortTitle: string; note: string; specLine: string; rows: Row[] }
+export type Detail = {
+  path: string
+  title: string
+  shortTitle: string
+  note: string
+  specLine: string
+  rows: Row[]
+  done?: DoneGroup
+}
 
 export type PanelModel = {
   isEmpty: boolean
@@ -57,6 +65,8 @@ export type PanelModel = {
   outside: Row[]
   sections: Section[]
   detail?: Detail
+  // The pane's visible rows, which only the render hook knows; the panel hints at scrolling past them.
+  bodyRows?: number
   labels: Messages['labels']
 }
 
@@ -122,10 +132,9 @@ const planRows = (plan: PlanView, messages: Messages): Row[] => {
 
 const ofKinds = (rows: readonly Row[], kinds: readonly RowKind[]): Row[] => rows.filter(row => kinds.includes(row.kind))
 
-const doneGroup = (rows: readonly Row[], ui: UiState, messages: Messages): DoneGroup | undefined => {
+const doneGroup = (rows: readonly Row[], expanded: boolean, messages: Messages): DoneGroup | undefined => {
   const done = ofKinds(rows, ['done'])
   if (done.length === 0) return undefined
-  const expanded = ui.expanded.includes('done')
   return {
     label: messages.doneCount(done.length),
     expanded,
@@ -170,6 +179,8 @@ const byActivity = (items: SectionItem[]): SectionItem[] =>
   items.sort((left, right) => activityRank(left) - activityRank(right))
 
 const projectSections = (derived: Derived, ui: UiState, messages: Messages): Section[] => {
+  // A plan without tasks.json has no progress to follow; the without-spec alert still lists it.
+  const trackable = derived.incomplete.filter(plan => plan.tasksFile !== 'missing')
   const sections: Omit<Section, 'expanded'>[] = [
     {
       id: 'specsWithoutPlan',
@@ -182,10 +193,10 @@ const projectSections = (derived: Derived, ui: UiState, messages: Messages): Sec
     {
       id: 'incomplete',
       icon: '◐',
-      header: messages.incompletePlans(derived.incomplete.length),
+      header: messages.incompletePlans(trackable.length),
       tone: 'suggestion',
       collapsible: false,
-      items: byActivity(derived.incomplete.map(plan => progressItem(plan, messages))),
+      items: byActivity(trackable.map(plan => progressItem(plan, messages))),
     },
     {
       id: 'withoutSpec',
@@ -217,16 +228,19 @@ const specLine = (plan: PlanView, messages: Messages): string => {
   return messages.noSpec
 }
 
-const detailOf = (derived: Derived, selected: string, messages: Messages): Detail | undefined => {
-  const plan = [...derived.incomplete, ...derived.complete].find(view => view.path === selected)
-  if (selected === '' || plan === undefined) return undefined
+const detailOf = (derived: Derived, ui: UiState, messages: Messages): Detail | undefined => {
+  const plan = [...derived.incomplete, ...derived.complete].find(view => view.path === ui.selected)
+  if (ui.selected === '' || plan === undefined) return undefined
+  const rows = planRows(plan, messages)
+  const done = doneGroup(rows, ui.expanded.includes('detail-done'), messages)
   return {
     path: plan.path,
     title: baseName(plan.path),
     shortTitle: plan.slug,
     note: planNote(plan, messages),
     specLine: specLine(plan, messages),
-    rows: planRows(plan, messages),
+    rows: ofKinds(rows, ['running', 'gate', 'pending', 'blocked']),
+    ...(done ? { done } : {}),
   }
 }
 
@@ -247,8 +261,8 @@ const isEmpty = (project: Project, live: Live): boolean =>
 export const buildPanel = ({ project, live, ui, messages }: PanelInput): PanelModel => {
   const derived = derive(project, live)
   const rows = derived.active ? planRows(derived.active, messages) : []
-  const done = doneGroup(rows, ui, messages)
-  const detail = detailOf(derived, ui.selected, messages)
+  const done = doneGroup(rows, ui.expanded.includes('done'), messages)
+  const detail = detailOf(derived, ui, messages)
   return {
     isEmpty: isEmpty(project, live),
     header: headerOf(derived, live, messages),
