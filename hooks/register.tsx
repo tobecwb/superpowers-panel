@@ -7,7 +7,7 @@ import { EMPTY_PROJECT, PANE, TITLE } from './atoms'
 import { derive } from './link'
 import { applyEvent, EMPTY_LIVE, parsePromptSkill, replay, taskListOf, toolEvent, type MessageLike } from './live'
 import { paneView, type PaneElements } from './pane'
-import { coalesce, isSuperpowersPath, scanProject, type FsLike } from './scan'
+import { coalesce, isSuperpowersPath, mergeWatchPaths, scanProject, watchTargets, type FsLike } from './scan'
 import { summarize } from './summary'
 
 // Trocar o shape quando o formato mudar: declina o que uma versão anterior guardou.
@@ -75,12 +75,57 @@ const initialize = async ($: EngineInterface) => {
   if ((await read($, projectAtom)).hasSuperpowersDir) await $.ui.open({ id: PANE, title: TITLE })
 }
 
+const rootOr = ($: EngineInterface, fallback: string): Promise<string> => $.session.root().catch(() => fallback)
+
+// O engine troca a lista dinâmica pelo `watchPaths` que o hook devolve: só
+// juntamos os nossos quando alguém (o engine ou outro hook) já devolve uma.
+const withOurWatch = async <R extends object>($: EngineInterface, ran: R, root: string): Promise<R> => {
+  const existing = (ran as { watchPaths?: unknown }).watchPaths
+  if (!Array.isArray(existing)) return ran
+  return { ...ran, watchPaths: mergeWatchPaths(existing as string[], watchTargets(await rootOr($, root))) }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'sp', description: 'Painel superpowers: /sp, /sp status, /sp sync' })
     void initialize($).catch(error => debug($, error))
     return next(e)
   })
+
+  // Outra sessão mexendo em docs/superpowers (ex.: .tasks.json chegando a 7/7)
+  // só aparece se o engine observar essas pastas e avisar via FileChanged.
+  on('classic.SessionStart', async ($, e, next) => {
+    const ran = await next(e)
+    try {
+      const root = await rootOr($, e.cwd)
+      return { ...ran, watchPaths: mergeWatchPaths(ran.watchPaths, watchTargets(root)) }
+    } catch (error) {
+      debug($, error)
+      return ran
+    }
+  }).catch(($, e, next) => next(e)) // falha aberta: nunca bloqueia o início
+
+  on('classic.CwdChanged', async ($, e, next) => {
+    const ran = await next(e)
+    void rescan($).catch(error => debug($, error))
+    try {
+      return await withOurWatch($, ran, e.new_cwd)
+    } catch (error) {
+      debug($, error)
+      return ran
+    }
+  }).catch(($, e, next) => next(e))
+
+  on('classic.FileChanged', async ($, e, next) => {
+    const ran = await next(e)
+    if (isSuperpowersPath(e.file_path)) void rescan($).catch(error => debug($, error))
+    try {
+      return await withOurWatch($, ran, e.cwd)
+    } catch (error) {
+      debug($, error)
+      return ran
+    }
+  }).catch(($, e, next) => next(e))
 
   on('tool.call', async ($, e, next) => {
     const tool = String(e.tool)

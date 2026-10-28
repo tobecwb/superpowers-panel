@@ -36,8 +36,14 @@ const PANE = {
 
 const TOOLS = ['TaskCreate', 'TaskUpdate', 'TaskList', 'Skill', 'Read', 'Write', 'Edit']
 
-const engine = (on: Parameters<TestBody>[1], taskList: unknown = { tasks: [] }, tools: readonly string[] = TOOLS) => {
+const engine = (
+  on: Parameters<TestBody>[1],
+  taskList: unknown = { tasks: [] },
+  tools: readonly string[] = TOOLS,
+  files: Record<string, string> = FILES,
+) => {
   const opened: string[] = []
+  let lists = 0
   on('tool.list', () => ({ value: tools.map(name => ({ name, description: name, mcp: false })) }))
   on('command.register', () => ({ value: { command: 'sp' } }))
   on('ui.open', (_, e) => { opened.push(e.id); return { value: { isPlaced: true } } })
@@ -45,14 +51,15 @@ const engine = (on: Parameters<TestBody>[1], taskList: unknown = { tasks: [] }, 
   on('ui.panes', () => ({ value: opened.map(id => ({ id, title: 'Superpowers', isShown: true, isFocused: false, isPlaced: true })) }))
   on('session.root', () => ({ value: ROOT }))
   on('session.messages', () => ({ value: [] }))
-  on('fs.exists', (_, e) => ({ value: e.path in FILES || DIRS.has(e.path) }))
+  on('fs.exists', (_, e) => ({ value: e.path in files || DIRS.has(e.path) }))
   on('fs.list', (_, e) => {
+    lists++
     const prefix = `${e.path}/`
-    const names = Object.keys(FILES).filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
+    const names = Object.keys(files).filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
     return { value: names.map(path => ({ name: path.slice(prefix.length), kind: 'file', size: 1, mtimeMs: 0, isLink: false })) }
   })
   on('fs.read', (_, e) => {
-    const text = FILES[e.path]
+    const text = files[e.path]
     if (text === undefined) throw new Error('ENOENT')
     return { value: text }
   })
@@ -63,7 +70,7 @@ const engine = (on: Parameters<TestBody>[1], taskList: unknown = { tasks: [] }, 
     return { result: { success: true } }
   })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  return opened
+  return Object.assign(opened, { lists: () => lists })
 }
 
 const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } } as const
@@ -157,4 +164,50 @@ test('clicar num plano abre o DETALHE; ✕ fechar o tira', async ($, on) => {
   await settle()
   expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
   await ui.unmount()
+})
+
+const OURS = [P, `${P}/specs`, `${P}/plans`]
+
+test('classic.SessionStart observa docs/superpowers e mantém os caminhos de outros', async ($, on) => {
+  engine(on)
+  on('classic.SessionStart', () => ({ watchPaths: ['/x'] }))
+  const result = await $.classic.SessionStart({ source: 'startup' })
+  expect(result.watchPaths).toEqual(['/x', ...OURS])
+})
+
+test('classic.FileChanged em docs/superpowers re-varre (outra sessão concluiu o plano)', async ($, on) => {
+  const files = { ...FILES }
+  engine(on, { tasks: [] }, TOOLS, files)
+  on('classic.FileChanged', () => ({}))
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const tasksPath = `${P}/plans/2026-10-03-auth.md.tasks.json`
+  files[tasksPath] = JSON.stringify({
+    tasks: [0, 1, 2].map(id => ({ id, subject: `Task ${id}: T${id}`, status: 'completed', description: '' })),
+  })
+  await $.classic.FileChanged({ file_path: tasksPath, event: 'change' })
+  let text = ''
+  for (let i = 0; i < 10 && !text.includes('3/3'); i++) {
+    await settle()
+    text = (await $.command.run({ ...RUN, command: 'sp', args: 'status' })).text ?? ''
+  }
+  expect(text).toContain('✓ 1 plano(s) concluído(s)\n  · 2026-10-03-auth.md  ██████████ 3/3')
+})
+
+test('classic.FileChanged fora de docs/superpowers não re-varre', async ($, on) => {
+  const opened = engine(on)
+  on('classic.FileChanged', () => ({}))
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const before = opened.lists()
+  await $.classic.FileChanged({ file_path: `${ROOT}/src/a.ts`, event: 'change' })
+  await settle()
+  expect(opened.lists()).toBe(before)
+})
+
+test('classic.CwdChanged junta nossos caminhos à lista que outro hook troca', async ($, on) => {
+  engine(on)
+  on('classic.CwdChanged', () => ({ watchPaths: ['/y'] }) as never)
+  const result = (await $.classic.CwdChanged({ old_cwd: '/old', new_cwd: ROOT })) as { watchPaths?: string[] }
+  expect(result.watchPaths).toEqual(['/y', ...OURS])
 })

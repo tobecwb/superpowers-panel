@@ -15,6 +15,17 @@ const PLANS = `${ROOT_DIR}/plans`
 export const isSuperpowersPath = (path: unknown): boolean =>
   typeof path === 'string' && path.replace(/\\/g, '/').includes(`${ROOT_DIR}/`)
 
+export const watchTargets = (root: string): string[] => {
+  const base = `${root.replace(/\/+$/, '')}/${ROOT_DIR}`
+  return [base, `${base}/specs`, `${base}/plans`]
+}
+
+export const mergeWatchPaths = (existing: readonly string[] | undefined, ours: readonly string[]): string[] => {
+  const merged = [...(existing ?? [])]
+  for (const path of ours) if (!merged.includes(path)) merged.push(path)
+  return merged
+}
+
 const markdownIn = async (fs: FsLike, root: string, dir: string): Promise<string[]> => {
   const full = `${root}/${dir}`
   if (!(await fs.exists(full))) return []
