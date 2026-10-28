@@ -1,16 +1,29 @@
 import { expect, test } from 'claude-code/testing'
 
-import { EMPTY_LIVE, applyEvent, extractPlanPath, parsePromptSkill, replay, taskListOf, toolEvent } from '../hooks/live'
+import { applyEvent, EMPTY_LIVE, extractPlanPath, parsePromptSkill, replay, taskListOf, toolEvent } from '../hooks/live'
 
 test('toolEvent reconhece as ferramentas relevantes', async () => {
-  expect(toolEvent('TaskCreate', { subject: 'A' }, { task: { id: '1', subject: 'A' } }))
-    .toEqual({ kind: 'create', id: '1', subject: 'A' })
-  expect(toolEvent('TaskUpdate', { taskId: '1', status: 'completed' }, {}))
-    .toEqual({ kind: 'update', id: '1', subject: undefined, status: 'completed', addBlockedBy: [] })
-  expect(toolEvent('Skill', { skill: 'superpowers-extended-cc:brainstorming' }, {}))
-    .toEqual({ kind: 'skill', skill: 'superpowers-extended-cc:brainstorming', args: undefined })
-  expect(toolEvent('Read', { file_path: '/r/docs/superpowers/plans/p.md.tasks.json' }, {}))
-    .toEqual({ kind: 'touch', path: '/r/docs/superpowers/plans/p.md.tasks.json' })
+  expect(toolEvent('TaskCreate', { subject: 'A' }, { task: { id: '1', subject: 'A' } })).toEqual({
+    kind: 'create',
+    id: '1',
+    subject: 'A',
+  })
+  expect(toolEvent('TaskUpdate', { taskId: '1', status: 'completed' }, {})).toEqual({
+    kind: 'update',
+    id: '1',
+    subject: undefined,
+    status: 'completed',
+    addBlockedBy: [],
+  })
+  expect(toolEvent('Skill', { skill: 'superpowers-extended-cc:brainstorming' }, {})).toEqual({
+    kind: 'skill',
+    skill: 'superpowers-extended-cc:brainstorming',
+    args: undefined,
+  })
+  expect(toolEvent('Read', { file_path: '/r/docs/superpowers/plans/p.md.tasks.json' }, {})).toEqual({
+    kind: 'touch',
+    path: '/r/docs/superpowers/plans/p.md.tasks.json',
+  })
   expect(toolEvent('Bash', { command: 'ls' }, {})).toBeUndefined()
 })
 
@@ -42,23 +55,32 @@ test('tocar um .tasks.json define o plano ativo', async () => {
 
 test('snapshot substitui as tarefas da sessão', async () => {
   const before = applyEvent(EMPTY_LIVE, { kind: 'create', id: '9', subject: 'velha' })
-  const live = applyEvent(before, { kind: 'snapshot', tasks: [{ id: '1', subject: 'A', status: 'completed', blockedBy: [] }] })
+  const live = applyEvent(before, {
+    kind: 'snapshot',
+    tasks: [{ id: '1', subject: 'A', status: 'completed', blockedBy: [] }],
+  })
   expect(Object.keys(live.sessionTasks)).toEqual(['1'])
 })
 
 test('taskListOf valida o resultado do TaskList', async () => {
-  expect(taskListOf({ tasks: [{ id: '1', subject: 'A', status: 'pending', blockedBy: [] }] }))
-    .toEqual([{ id: '1', subject: 'A', status: 'pending', blockedBy: [] }])
+  expect(taskListOf({ tasks: [{ id: '1', subject: 'A', status: 'pending', blockedBy: [] }] })).toEqual([
+    { id: '1', subject: 'A', status: 'pending', blockedBy: [] },
+  ])
   expect(taskListOf({})).toBeUndefined()
 })
 
 test('extractPlanPath e parsePromptSkill', async () => {
   expect(extractPlanPath('rodar `docs/superpowers/plans/x.md` agora')).toBe('docs/superpowers/plans/x.md')
   expect(extractPlanPath('/a/docs/superpowers/plans/x.md.tasks.json')).toBe('docs/superpowers/plans/x.md')
-  expect(parsePromptSkill('/superpowers-extended-cc:writing-plans docs/a.md'))
-    .toEqual({ skill: 'superpowers-extended-cc:writing-plans', args: 'docs/a.md' })
-  expect(parsePromptSkill('<command-name>/superpowers-extended-cc:brainstorming</command-name>\n<command-args>x</command-args>'))
-    .toEqual({ skill: 'superpowers-extended-cc:brainstorming', args: 'x' })
+  expect(parsePromptSkill('/superpowers-extended-cc:writing-plans docs/a.md')).toEqual({
+    skill: 'superpowers-extended-cc:writing-plans',
+    args: 'docs/a.md',
+  })
+  expect(
+    parsePromptSkill(
+      '<command-name>/superpowers-extended-cc:brainstorming</command-name>\n<command-args>x</command-args>',
+    ),
+  ).toEqual({ skill: 'superpowers-extended-cc:brainstorming', args: 'x' })
   expect(parsePromptSkill('olá')).toBeUndefined()
 })
 
@@ -69,14 +91,26 @@ test('replay reconstrói tarefas e fase do transcript', async () => {
       role: 'assistant',
       text: '',
       toolUses: [
-        { tool_use_id: 'a', tool: 'TaskCreate', input: { subject: 'Task 0: A' }, result: { task: { id: '1', subject: 'Task 0: A' } } },
-        { tool_use_id: 'b', tool: 'TaskUpdate', input: { taskId: '1', status: 'in_progress' }, result: { success: true } },
+        {
+          tool_use_id: 'a',
+          tool: 'TaskCreate',
+          input: { subject: 'Task 0: A' },
+          result: { task: { id: '1', subject: 'Task 0: A' } },
+        },
+        {
+          tool_use_id: 'b',
+          tool: 'TaskUpdate',
+          input: { taskId: '1', status: 'in_progress' },
+          result: { success: true },
+        },
         { tool_use_id: 'c', tool: 'TaskCreate', input: { subject: 'falhou' }, isError: true },
       ],
     },
   ])
   expect(live.phase).toBe('brainstorming')
-  expect(Object.values(live.sessionTasks)).toEqual([{ id: '1', subject: 'Task 0: A', status: 'in_progress', blockedBy: [] }])
+  expect(Object.values(live.sessionTasks)).toEqual([
+    { id: '1', subject: 'Task 0: A', status: 'in_progress', blockedBy: [] },
+  ])
 })
 
 test('update de id desconhecido sem subject não cria tarefa', async () => {
@@ -85,7 +119,13 @@ test('update de id desconhecido sem subject não cria tarefa', async () => {
 })
 
 test('update de id desconhecido com subject cria a tarefa com esse subject', async () => {
-  const live = applyEvent(EMPTY_LIVE, { kind: 'update', id: '3', subject: 'Nova', status: 'in_progress', addBlockedBy: [] })
+  const live = applyEvent(EMPTY_LIVE, {
+    kind: 'update',
+    id: '3',
+    subject: 'Nova',
+    status: 'in_progress',
+    addBlockedBy: [],
+  })
   expect(live.sessionTasks['3']).toEqual({ id: '3', subject: 'Nova', status: 'in_progress', blockedBy: [] })
 })
 
@@ -96,7 +136,12 @@ test('replay sem result no TaskCreate não vaza #id', async () => {
       text: '',
       toolUses: [
         { tool_use_id: 'a', tool: 'TaskCreate', input: { subject: 'A' } },
-        { tool_use_id: 'b', tool: 'TaskUpdate', input: { taskId: '1', status: 'in_progress' }, result: { success: true } },
+        {
+          tool_use_id: 'b',
+          tool: 'TaskUpdate',
+          input: { taskId: '1', status: 'in_progress' },
+          result: { success: true },
+        },
       ],
     },
   ])

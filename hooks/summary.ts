@@ -1,5 +1,5 @@
 import type { Live, PlanTask, Project, SessionTask } from '../types'
-import { groupTasks, isBlocked, type Derived, type PlanView } from './link'
+import { type Derived, groupTasks, isBlocked, type PlanView } from './link'
 
 const CELLS = 10
 
@@ -38,8 +38,7 @@ const progress = (plan: PlanView): string => `${bar(plan.done, plan.total)} ${pl
 
 export const planLine = (plan: PlanView): string => `Plano: ${baseName(plan.path)}  ${progress(plan)}`
 
-export const incompleteItem = (plan: PlanView): string =>
-  `  · ${baseName(plan.path)}  ${plan.label ?? progress(plan)}`
+export const incompleteItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${plan.label ?? progress(plan)}`
 
 export const completeItem = (plan: PlanView): string => `  · ${baseName(plan.path)}  ${progress(plan)}`
 
@@ -55,8 +54,10 @@ export const orderedPlanTasks = (plan: PlanView): PlanTask[] => {
 }
 
 const specLine = (plan: PlanView): string =>
-  plan.spec ? `Spec: ${baseName(plan.spec.path)}`
-    : plan.specMissing ? `Spec: ausente (${plan.specRef ?? ''})`
+  plan.spec
+    ? `Spec: ${baseName(plan.spec.path)}`
+    : plan.specMissing
+      ? `Spec: ausente (${plan.specRef ?? ''})`
       : 'Spec: —'
 
 // Cabeçalho, spec e todas as tarefas (concluídas inclusive) de um plano.
@@ -79,8 +80,10 @@ export const summarize = (derived: Derived, project: Project, live: Live): strin
   lines.push('', 'PROJETO')
   const before = lines.length
   if (derived.specsWithoutPlan.length > 0) {
-    lines.push(`⚠ ${derived.specsWithoutPlan.length} spec(s) sem plano`,
-      ...derived.specsWithoutPlan.map(spec => `  · ${baseName(spec.path)}`))
+    lines.push(
+      `⚠ ${derived.specsWithoutPlan.length} spec(s) sem plano`,
+      ...derived.specsWithoutPlan.map(spec => `  · ${baseName(spec.path)}`),
+    )
   }
   if (derived.incomplete.length > 0) {
     lines.push(`◐ ${derived.incomplete.length} plano(s) incompleto(s)`, ...derived.incomplete.map(incompleteItem))
@@ -89,8 +92,7 @@ export const summarize = (derived: Derived, project: Project, live: Live): strin
     lines.push(`⚠ ${derived.withoutSpec.length} plano(s) sem spec`, ...derived.withoutSpec.map(withoutSpecItem))
   }
   if (derived.complete.length > 0) {
-    lines.push(`✓ ${derived.complete.length} plano(s) concluído(s)`,
-      ...derived.complete.map(completeItem))
+    lines.push(`✓ ${derived.complete.length} plano(s) concluído(s)`, ...derived.complete.map(completeItem))
   }
   if (lines.length === before) lines.push('Nenhuma spec ou plano ainda.')
   return lines.join('\n')

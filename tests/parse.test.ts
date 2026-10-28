@@ -9,7 +9,9 @@ test('parseName extrai data e slug, removendo -design', async () => {
 })
 
 test('parseSpecRef lê a linha **Spec:** com ou sem crases', async () => {
-  expect(parseSpecRef('# P\n\n**Spec:** `docs/superpowers/specs/a-design.md`\n')).toBe('docs/superpowers/specs/a-design.md')
+  expect(parseSpecRef('# P\n\n**Spec:** `docs/superpowers/specs/a-design.md`\n')).toBe(
+    'docs/superpowers/specs/a-design.md',
+  )
   expect(parseSpecRef('**Spec:** ./docs/superpowers/specs/a.md')).toBe('./docs/superpowers/specs/a.md')
   expect(parseSpecRef('# Sem spec')).toBeUndefined()
 })
@@ -25,7 +27,12 @@ test('parseTasksFile lê o formato do fork', async () => {
   const text = JSON.stringify({
     planPath: 'docs/superpowers/plans/p.md',
     tasks: [
-      { id: 0, subject: 'Task 0: A', status: 'completed', description: '```json:metadata\n{"tags": ["user-gate"]}\n```' },
+      {
+        id: 0,
+        subject: 'Task 0: A',
+        status: 'completed',
+        description: '```json:metadata\n{"tags": ["user-gate"]}\n```',
+      },
       { id: 1, subject: 'Task 1: B', status: 'in_progress', blockedBy: [0], description: '' },
       { subject: 'Task 2: C', status: 'weird' },
     ],

@@ -48,10 +48,7 @@ export const activePlanPath = (plans: readonly Plan[], live: Live): string | und
   return best?.path
 }
 
-export const mergeStatuses = (
-  tasks: readonly PlanTask[],
-  session: Record<string, SessionTask>,
-): PlanTask[] => {
+export const mergeStatuses = (tasks: readonly PlanTask[], session: Record<string, SessionTask>): PlanTask[] => {
   const bySubject = new Map(Object.values(session).map(task => [task.subject, task.status]))
   return tasks.map(task => {
     const status = bySubject.get(task.subject)
@@ -74,9 +71,7 @@ export const groupTasks = (tasks: readonly PlanTask[]): TaskGroups => ({
 })
 
 const labelOf = (plan: Plan): string | undefined =>
-  plan.tasksFile === 'missing' ? 'sem tasks.json'
-    : plan.tasksFile === 'invalid' ? 'tasks.json inválido'
-      : undefined
+  plan.tasksFile === 'missing' ? 'sem tasks.json' : plan.tasksFile === 'invalid' ? 'tasks.json inválido' : undefined
 
 export const derive = (project: Project, live: Live): Derived => {
   const activePath = activePlanPath(project.plans, live)

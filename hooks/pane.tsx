@@ -3,8 +3,17 @@ import type { BoxProps, ButtonProps, ElementConstructor, RenderElement, TextProp
 import type { Live, Project } from '../types'
 import { derive, groupTasks, type PlanView } from './link'
 import {
-  baseName, completeItem, detailLines, incompleteItem, isEmpty, orderedPlanTasks, phaseLine, planLine, sessionLine,
-  taskLine, withoutSpecItem,
+  baseName,
+  completeItem,
+  detailLines,
+  incompleteItem,
+  isEmpty,
+  orderedPlanTasks,
+  phaseLine,
+  planLine,
+  sessionLine,
+  taskLine,
+  withoutSpecItem,
 } from './summary'
 
 export type PaneElements = {
@@ -43,8 +52,9 @@ export const paneView = (
   )
   const all = [...derived.incomplete, ...derived.complete]
   const detail = selected === '' ? undefined : all.find(plan => plan.path === selected)
-  const hasAlerts = derived.specsWithoutPlan.length + derived.incomplete.length +
-    derived.withoutSpec.length + derived.complete.length > 0
+  const hasAlerts =
+    derived.specsWithoutPlan.length + derived.incomplete.length + derived.withoutSpec.length + derived.complete.length >
+    0
 
   return (
     <Box flexDirection="column">
@@ -59,7 +69,12 @@ export const paneView = (
             <Text color={task.status === 'in_progress' ? 'claude' : undefined}>{taskLine(task, active.tasks)}</Text>
           ))}
           {groups.done.length > 0 && (
-            <Button key="done" label={`${showDone ? '▾' : '▸'} ✓ ${groups.done.length} concluída(s)`} onPress={toggle('done')} plain />
+            <Button
+              key="done"
+              label={`${showDone ? '▾' : '▸'} ✓ ${groups.done.length} concluída(s)`}
+              onPress={toggle('done')}
+              plain
+            />
           )}
           {showDone && groups.done.map(task => <Text dimColor>{taskLine(task, active.tasks)}</Text>)}
         </Box>
@@ -68,7 +83,9 @@ export const paneView = (
       {derived.outside.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           <Text bold>FORA DO PLANO (sessão)</Text>
-          {derived.outside.map(task => <Text>{sessionLine(task)}</Text>)}
+          {derived.outside.map(task => (
+            <Text>{sessionLine(task)}</Text>
+          ))}
         </Box>
       )}
 
@@ -78,7 +95,9 @@ export const paneView = (
         {derived.specsWithoutPlan.length > 0 && (
           <Text color="warning">{`⚠ ${derived.specsWithoutPlan.length} spec(s) sem plano`}</Text>
         )}
-        {derived.specsWithoutPlan.map(spec => <Text>{`  · ${baseName(spec.path)}`}</Text>)}
+        {derived.specsWithoutPlan.map(spec => (
+          <Text>{`  · ${baseName(spec.path)}`}</Text>
+        ))}
         {derived.incomplete.length > 0 && (
           <Text color="suggestion">{`◐ ${derived.incomplete.length} plano(s) incompleto(s)`}</Text>
         )}
@@ -88,7 +107,12 @@ export const paneView = (
         )}
         {derived.withoutSpec.map(plan => planButton('nospec', plan, withoutSpecItem(plan)))}
         {derived.complete.length > 0 && (
-          <Button key="complete" label={`${showComplete ? '▾' : '▸'} ✓ ${derived.complete.length} plano(s) concluído(s)`} onPress={toggle('complete')} plain />
+          <Button
+            key="complete"
+            label={`${showComplete ? '▾' : '▸'} ✓ ${derived.complete.length} plano(s) concluído(s)`}
+            onPress={toggle('complete')}
+            plain
+          />
         )}
         {showComplete && derived.complete.map(plan => planButton('plan', plan, completeItem(plan), true))}
       </Box>
@@ -96,7 +120,11 @@ export const paneView = (
       {detail && (
         <Box flexDirection="column" marginTop={1}>
           <Text bold>DETALHE</Text>
-          {detailLines(detail).slice(0, 2).map(line => <Text>{line}</Text>)}
+          {detailLines(detail)
+            .slice(0, 2)
+            .map(line => (
+              <Text>{line}</Text>
+            ))}
           {orderedPlanTasks(detail).map(task => (
             <Text color={task.status === 'in_progress' ? 'claude' : undefined}>{taskLine(task, detail.tasks)}</Text>
           ))}

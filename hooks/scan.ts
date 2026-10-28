@@ -42,7 +42,10 @@ const readPlan = async (fs: FsLike, root: string, name: string): Promise<Plan> =
   let tasksFile: Plan['tasksFile'] = 'missing'
   let tasks: PlanTask[] = []
   if (await fs.exists(tasksPath)) {
-    const parsed = await fs.read(tasksPath).then(raw => (raw.length > MAX_TASKS_BYTES ? undefined : parseTasksFile(raw)), () => undefined)
+    const parsed = await fs.read(tasksPath).then(
+      raw => (raw.length > MAX_TASKS_BYTES ? undefined : parseTasksFile(raw)),
+      () => undefined,
+    )
     tasksFile = parsed ? 'ok' : 'invalid'
     tasks = parsed ?? []
   }
@@ -52,7 +55,10 @@ const readPlan = async (fs: FsLike, root: string, name: string): Promise<Plan> =
 export const scanProject = async (fs: FsLike, root: string, now: number): Promise<Project> => {
   const hasSuperpowersDir = await fs.exists(`${root}/${ROOT_DIR}`)
   if (!hasSuperpowersDir) return { specs: [], plans: [], scannedAt: now, hasSuperpowersDir }
-  const specs: Spec[] = (await markdownIn(fs, root, SPECS)).map(name => ({ path: `${SPECS}/${name}`, ...parseName(name) }))
+  const specs: Spec[] = (await markdownIn(fs, root, SPECS)).map(name => ({
+    path: `${SPECS}/${name}`,
+    ...parseName(name),
+  }))
   const plans = await Promise.all((await markdownIn(fs, root, PLANS)).map(name => readPlan(fs, root, name)))
   return { specs, plans, scannedAt: now, hasSuperpowersDir }
 }

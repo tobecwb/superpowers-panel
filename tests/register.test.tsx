@@ -1,4 +1,4 @@
-import { expect, test, type TestBody } from 'claude-code/testing'
+import { expect, type TestBody, test } from 'claude-code/testing'
 
 // O tsconfig não carrega libs de runtime (types: []); o runtime de teste tem setTimeout.
 declare const setTimeout: (callback: (...args: never[]) => void, ms: number) => unknown
@@ -13,7 +13,13 @@ const FILES: Record<string, string> = {
     tasks: [
       { id: 0, subject: 'Task 0: Login', status: 'completed', description: '' },
       { id: 1, subject: 'Task 1: Refresh', status: 'pending', blockedBy: [0], description: '' },
-      { id: 2, subject: 'Task 2: Gate E2E', status: 'pending', blockedBy: [1], description: '```json:metadata\n{"userGate": true}\n```' },
+      {
+        id: 2,
+        subject: 'Task 2: Gate E2E',
+        status: 'pending',
+        blockedBy: [1],
+        description: '```json:metadata\n{"userGate": true}\n```',
+      },
     ],
   }),
   [`${P}/plans/2026-09-02-hotfix.md`]: '# Hotfix',
@@ -46,9 +52,14 @@ const engine = (
   let lists = 0
   on('tool.list', () => ({ value: tools.map(name => ({ name, description: name, mcp: false })) }))
   on('command.register', () => ({ value: { command: 'sp' } }))
-  on('ui.open', (_, e) => { opened.push(e.id); return { value: { isPlaced: true } } })
+  on('ui.open', (_, e) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
   on('ui.close', () => ({ value: undefined }))
-  on('ui.panes', () => ({ value: opened.map(id => ({ id, title: 'Superpowers', isShown: true, isFocused: false, isPlaced: true })) }))
+  on('ui.panes', () => ({
+    value: opened.map(id => ({ id, title: 'Superpowers', isShown: true, isFocused: false, isPlaced: true })),
+  }))
   on('session.root', () => ({ value: ROOT }))
   on('session.messages', () => ({ value: [] }))
   on('fs.exists', (_, e) => ({ value: e.path in files || DIRS.has(e.path) }))
@@ -56,7 +67,9 @@ const engine = (
     lists++
     const prefix = `${e.path}/`
     const names = Object.keys(files).filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
-    return { value: names.map(path => ({ name: path.slice(prefix.length), kind: 'file', size: 1, mtimeMs: 0, isLink: false })) }
+    return {
+      value: names.map(path => ({ name: path.slice(prefix.length), kind: 'file', size: 1, mtimeMs: 0, isLink: false })),
+    }
   })
   on('fs.read', (_, e) => {
     const text = files[e.path]
@@ -66,7 +79,8 @@ const engine = (
   on('tool.call', (_, e) => {
     if (!tools.includes(String(e.tool))) throw new Error(`no tool named "${String(e.tool)}"`)
     if (e.tool === 'TaskList') return taskList === 'deny' ? { deny: 'negado' } : { result: taskList }
-    if (e.tool === 'TaskCreate') return { result: { task: { id: '42', subject: String((e as { subject?: unknown }).subject) } } }
+    if (e.tool === 'TaskCreate')
+      return { result: { task: { id: '42', subject: String((e as { subject?: unknown }).subject) } } }
     return { result: { success: true } }
   })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -94,7 +108,11 @@ test('execução ao vivo: skill + TaskCreate/TaskUpdate mudam o pane', async ($,
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
-  await $.tool.call({ tool: 'Skill', skill: 'superpowers-extended-cc:executing-plans', args: 'docs/superpowers/plans/2026-10-03-auth.md' })
+  await $.tool.call({
+    tool: 'Skill',
+    skill: 'superpowers-extended-cc:executing-plans',
+    args: 'docs/superpowers/plans/2026-10-03-auth.md',
+  })
   await $.tool.call({ tool: 'TaskCreate', subject: 'Task 1: Refresh', description: '' })
   await $.tool.call({ tool: 'TaskUpdate', taskId: '42', status: 'in_progress' })
 

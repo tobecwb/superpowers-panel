@@ -5,22 +5,25 @@ import type { Project } from '../types'
 
 import { EMPTY_PROJECT, PANE, TITLE } from './atoms'
 import { derive } from './link'
-import { applyEvent, EMPTY_LIVE, parsePromptSkill, replay, taskListOf, toolEvent, type MessageLike } from './live'
-import { paneView, type PaneElements } from './pane'
-import { coalesce, isSuperpowersPath, mergeWatchPaths, scanProject, watchTargets, type FsLike } from './scan'
+import { applyEvent, EMPTY_LIVE, type MessageLike, parsePromptSkill, replay, taskListOf, toolEvent } from './live'
+import { type PaneElements, paneView } from './pane'
+import { coalesce, type FsLike, isSuperpowersPath, mergeWatchPaths, scanProject, watchTargets } from './scan'
 import { summarize } from './summary'
 
 // Trocar o shape quando o formato mudar: declina o que uma versão anterior guardou.
-const projectAtom = atom({ plugin: 'superpowers-panel', key: 'project' } as const, EMPTY_PROJECT, { shape: 'project-1' })
+const projectAtom = atom({ plugin: 'superpowers-panel', key: 'project' } as const, EMPTY_PROJECT, {
+  shape: 'project-1',
+})
 const liveAtom = atom({ plugin: 'superpowers-panel', key: 'live' } as const, EMPTY_LIVE, { shape: 'live-1' })
-const expandedAtom = atom({ plugin: 'superpowers-panel', key: 'expanded' } as const, [] as string[], { shape: 'expanded-1' })
+const expandedAtom = atom({ plugin: 'superpowers-panel', key: 'expanded' } as const, [] as string[], {
+  shape: 'expanded-1',
+})
 const selectedAtom = atom({ plugin: 'superpowers-panel', key: 'selected' } as const, '', { shape: 'selected-1' })
 
 const WATCHED = new Set(['TaskCreate', 'TaskUpdate', 'Skill', 'Read', 'Write', 'Edit'])
-const USAGE ='Uso: /sp (abre/fecha o painel) · /sp status · /sp sync'
+const USAGE = 'Uso: /sp (abre/fecha o painel) · /sp status · /sp sync'
 
-const debug = ($: EngineInterface, error: unknown) =>
-  $.ui.log(`superpowers-panel: ${String(error)}`, { to: 'debug' })
+const debug = ($: EngineInterface, error: unknown) => $.ui.log(`superpowers-panel: ${String(error)}`, { to: 'debug' })
 
 const fsOf = ($: EngineInterface): FsLike => ({
   exists: path => $.fs.exists(path),
@@ -137,7 +140,8 @@ export const register: Register = on => {
         const input = e as unknown as Record<string, unknown>
         const event = toolEvent(tool, input, ran.result)
         if (event) await update($, liveAtom, live => applyEvent(live, event))
-        if ((tool === 'Write' || tool === 'Edit') && isSuperpowersPath(input.file_path)) void rescan($).catch(error => debug($, error))
+        if ((tool === 'Write' || tool === 'Edit') && isSuperpowersPath(input.file_path))
+          void rescan($).catch(error => debug($, error))
       }
     } catch (error) {
       debug($, error)
@@ -147,7 +151,8 @@ export const register: Register = on => {
 
   on('prompt.submit', async ($, e, next) => {
     const skill = parsePromptSkill(e.text)
-    if (skill) await update($, liveAtom, live => applyEvent(live, { kind: 'skill', ...skill })).catch(error => debug($, error))
+    if (skill)
+      await update($, liveAtom, live => applyEvent(live, { kind: 'skill', ...skill })).catch(error => debug($, error))
     return next(e)
   }).catch(($, e, next) => next(e)) // falha aberta: nunca bloqueia o prompt
 

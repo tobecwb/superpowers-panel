@@ -22,9 +22,7 @@ export const parseMetadata = (description: string): Record<string, unknown> | un
   if (!match) return undefined
   try {
     const value: unknown = JSON.parse(match[1]!)
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : undefined
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined
   } catch {
     return undefined
   }
@@ -48,14 +46,16 @@ export const parseTasksFile = (text: string): PlanTask[] | undefined => {
     const raw = task as Record<string, unknown>
     const description = typeof raw.description === 'string' ? raw.description : ''
 
-    return [{
-      id: typeof raw.id === 'number' ? raw.id : index,
-      subject: typeof raw.subject === 'string' ? raw.subject : `Task ${index}`,
-      status: toStatus(raw.status),
-      blockedBy: Array.isArray(raw.blockedBy)
-        ? raw.blockedBy.filter((id): id is number => typeof id === 'number')
-        : [],
-      userGate: isUserGate(parseMetadata(description)),
-    }]
+    return [
+      {
+        id: typeof raw.id === 'number' ? raw.id : index,
+        subject: typeof raw.subject === 'string' ? raw.subject : `Task ${index}`,
+        status: toStatus(raw.status),
+        blockedBy: Array.isArray(raw.blockedBy)
+          ? raw.blockedBy.filter((id): id is number => typeof id === 'number')
+          : [],
+        userGate: isUserGate(parseMetadata(description)),
+      },
+    ]
   })
 }

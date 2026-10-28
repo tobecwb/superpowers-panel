@@ -17,7 +17,13 @@ export type LiveEvent =
 export type MessageLike = {
   role: 'user' | 'assistant'
   text: string
-  toolUses: readonly { tool_use_id?: string; tool: string; input: Record<string, unknown>; result?: unknown; isError?: true }[]
+  toolUses: readonly {
+    tool_use_id?: string
+    tool: string
+    input: Record<string, unknown>
+    result?: unknown
+    isError?: true
+  }[]
 }
 
 const str = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
@@ -35,11 +41,7 @@ export const parsePromptSkill = (text: string): { skill: string; args?: string }
   return typed ? { skill: SKILL_PREFIX + typed[1], args: typed[2] } : undefined
 }
 
-export const toolEvent = (
-  tool: string,
-  input: Record<string, unknown>,
-  result: unknown,
-): LiveEvent | undefined => {
+export const toolEvent = (tool: string, input: Record<string, unknown>, result: unknown): LiveEvent | undefined => {
   switch (tool) {
     case 'TaskCreate': {
       const id = (result as { task?: { id?: unknown } } | undefined)?.task?.id
@@ -48,13 +50,15 @@ export const toolEvent = (
     }
     case 'TaskUpdate': {
       const id = str(input.taskId)
-      return id === undefined ? undefined : {
-        kind: 'update',
-        id,
-        subject: str(input.subject),
-        status: str(input.status),
-        addBlockedBy: strs(input.addBlockedBy),
-      }
+      return id === undefined
+        ? undefined
+        : {
+            kind: 'update',
+            id,
+            subject: str(input.subject),
+            status: str(input.status),
+            addBlockedBy: strs(input.addBlockedBy),
+          }
     }
     case 'Skill': {
       const skill = str(input.skill)
@@ -98,7 +102,12 @@ export const applyEvent = (live: Live, event: LiveEvent): Live => {
       if (event.status === 'deleted') return { ...live, sessionTasks: rest }
       // ID nativo nunca é exibido: sem subject conhecido não há o que mostrar.
       if (!current && event.subject === undefined) return live
-      const base: SessionTask = current ?? { id: event.id, subject: event.subject ?? '', status: 'pending', blockedBy: [] }
+      const base: SessionTask = current ?? {
+        id: event.id,
+        subject: event.subject ?? '',
+        status: 'pending',
+        blockedBy: [],
+      }
       return {
         ...live,
         sessionTasks: {

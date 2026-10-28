@@ -1,13 +1,23 @@
 import { expect, test } from 'claude-code/testing'
-
-import type { Live, Plan, PlanTask, Project } from '../types'
 import { activePlanPath, derive, groupTasks, linkPlan } from '../hooks/link'
+import type { Live, Plan, PlanTask, Project } from '../types'
 
-const task = (id: number, status: PlanTask['status'], blockedBy: number[] = []): PlanTask =>
-  ({ id, subject: `Task ${id}: T${id}`, status, blockedBy, userGate: false })
+const task = (id: number, status: PlanTask['status'], blockedBy: number[] = []): PlanTask => ({
+  id,
+  subject: `Task ${id}: T${id}`,
+  status,
+  blockedBy,
+  userGate: false,
+})
 
-const plan = (over: Partial<Plan>): Plan =>
-  ({ path: 'docs/superpowers/plans/2026-01-01-x.md', slug: 'x', date: '2026-01-01', tasksFile: 'ok', tasks: [], ...over })
+const plan = (over: Partial<Plan>): Plan => ({
+  path: 'docs/superpowers/plans/2026-01-01-x.md',
+  slug: 'x',
+  date: '2026-01-01',
+  tasksFile: 'ok',
+  tasks: [],
+  ...over,
+})
 
 const SPECS = [
   { path: 'docs/superpowers/specs/2026-01-01-auth-design.md', slug: 'auth', date: '2026-01-01' },
@@ -16,7 +26,9 @@ const SPECS = [
 const EMPTY: Live = { sessionTasks: {} }
 
 test('linkPlan usa **Spec:** com ./ ou só o nome, e cai para o slug', async () => {
-  expect(linkPlan(plan({ specRef: './docs/superpowers/specs/2026-01-01-auth-design.md' }), SPECS).spec?.slug).toBe('auth')
+  expect(linkPlan(plan({ specRef: './docs/superpowers/specs/2026-01-01-auth-design.md' }), SPECS).spec?.slug).toBe(
+    'auth',
+  )
   expect(linkPlan(plan({ specRef: '2026-01-02-billing-design.md' }), SPECS).spec?.slug).toBe('billing')
   expect(linkPlan(plan({ specRef: 'docs/nao-existe.md' }), SPECS)).toEqual({ specMissing: true })
   expect(linkPlan(plan({ slug: 'auth' }), SPECS).spec?.slug).toBe('auth')
@@ -47,7 +59,9 @@ test('derive classifica os alertas do projeto', async () => {
 test('plano ativo: explícito, senão maior interseção de subjects', async () => {
   const a = plan({ path: 'docs/superpowers/plans/a.md', tasks: [task(0, 'pending'), task(1, 'pending')] })
   const b = plan({ path: 'docs/superpowers/plans/b.md', tasks: [task(5, 'pending')] })
-  expect(activePlanPath([a, b], { sessionTasks: {}, activePlan: 'docs/superpowers/plans/b.md' })).toBe('docs/superpowers/plans/b.md')
+  expect(activePlanPath([a, b], { sessionTasks: {}, activePlan: 'docs/superpowers/plans/b.md' })).toBe(
+    'docs/superpowers/plans/b.md',
+  )
   const live: Live = { sessionTasks: { '7': { id: '7', subject: 'Task 0: T0', status: 'in_progress', blockedBy: [] } } }
   expect(activePlanPath([a, b], live)).toBe('docs/superpowers/plans/a.md')
   expect(activePlanPath([a, b], EMPTY)).toBeUndefined()
@@ -62,7 +76,9 @@ test('empate de interseção prefere o plano mais novo', async () => {
 
 test('status nativo prevalece no plano ativo e o resto vai para outside', async () => {
   const project: Project = {
-    hasSuperpowersDir: true, scannedAt: 1, specs: [],
+    hasSuperpowersDir: true,
+    scannedAt: 1,
+    specs: [],
     plans: [plan({ tasks: [task(0, 'pending'), task(1, 'pending')] })],
   }
   const live: Live = {
