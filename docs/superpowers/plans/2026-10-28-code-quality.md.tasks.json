@@ -64,7 +64,7 @@
     {
       "id": 7,
       "subject": "Task 7: Comentários e descrições de teste em inglês",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Traduzir todos os comentários restantes e todas as descrições de `test('…')` para inglês, removendo comentários que só repetem o código, sem tocar nas asserções.\n\n**Files:**\n- Modify: `hooks/atoms.ts`, `hooks/register.tsx`, `hooks/summary.ts`, `types/index.d.ts`, `tests/*.test.ts(x)`\n\n**Acceptance Criteria:**\n- [ ] `bun run comments` sai com código 0\n- [ ] `grep -nE \"^test\\('.*[áàâãéêíóôõúç]|^test\\('[^']*\\b(não|sem|com|para|quando)\\b\" tests/*.ts*` não retorna nada\n- [ ] `git diff HEAD -- tests | grep -E '^[-+]\\s+expect' | wc -l` imprime `0` (nenhuma asserção alterada)\n- [ ] `bun run typecheck && bun run lint && bun run test` saem com código 0 (50 pass + 6 pass)\n\n**Verify:** `bun run comments && bun run typecheck && bun run lint && bun run test && git diff HEAD -- tests | grep -cE '^[-+]\\s+expect'` → sem saída de comments, testes passam, `0`\n\n```json:metadata\n{\"files\": [\"hooks/atoms.ts\", \"hooks/register.tsx\", \"hooks/summary.ts\", \"types/index.d.ts\"], \"verifyCommand\": \"bun run comments && bun run typecheck && bun run lint && bun run test && git diff HEAD -- tests | grep -cE '^[-+]\\\\s+expect'\", \"acceptanceCriteria\": [\"`bun run comments` sai com código 0\", \"`grep -nE \\\"^test\\\\('.*[áàâãéêíóôõúç]|^test\\\\('[^']*\\\\b(não|sem|com|para|quando)\\\\b\\\" tests/*.ts*` não retorna nada\", \"`git diff HEAD -- tests | grep -E '^[-+]\\\\s+expect' | wc -l` imprime `0` (nenhuma asserção alterada)\", \"`bun run typecheck && bun run lint && bun run test` saem com código 0 (50 pass + 6 pass)\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         6
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:36:56-03:00"
+  "lastUpdated": "2026-10-28T11:40:19-03:00"
 }
