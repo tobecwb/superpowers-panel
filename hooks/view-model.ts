@@ -12,7 +12,7 @@ type PhaseBadge = { label: string; tone: Tone }
 
 type Header = {
   phase?: PhaseBadge
-  plan?: { name: string; done: number; total: number }
+  plan?: { name: string; shortName: string; done: number; total: number }
   hint?: string
   syncWarning?: string
 }
@@ -24,6 +24,8 @@ type PlanActivity = 'running' | 'gate'
 export type SectionItem = {
   key: string
   label: string
+  // The slug the panel falls back to when `label` does not fit.
+  shortLabel?: string
   note?: string
   planPath?: string
   progress?: { done: number; total: number }
@@ -44,7 +46,7 @@ export type Section = {
 
 type DoneGroup = { label: string; expanded: boolean; keys: string[]; rows: Row[] }
 
-export type Detail = { path: string; title: string; note: string; specLine: string; rows: Row[] }
+export type Detail = { path: string; title: string; shortTitle: string; note: string; specLine: string; rows: Row[] }
 
 export type PanelModel = {
   isEmpty: boolean
@@ -140,6 +142,7 @@ const planNote = (plan: PlanView, messages: Messages): string =>
 const planItem = (prefix: string, plan: PlanView, note: string | undefined): SectionItem => ({
   key: `${prefix}:${plan.path}`,
   label: baseName(plan.path),
+  shortLabel: plan.slug,
   planPath: plan.path,
   ...(note === undefined ? {} : { note }),
 })
@@ -220,6 +223,7 @@ const detailOf = (derived: Derived, selected: string, messages: Messages): Detai
   return {
     path: plan.path,
     title: baseName(plan.path),
+    shortTitle: plan.slug,
     note: planNote(plan, messages),
     specLine: specLine(plan, messages),
     rows: planRows(plan, messages),
@@ -231,7 +235,7 @@ const headerOf = (derived: Derived, live: Live, messages: Messages): Header => {
   const plan = derived.active
   return {
     ...(phase ? { phase } : {}),
-    ...(plan ? { plan: { name: baseName(plan.path), done: plan.done, total: plan.total } } : {}),
+    ...(plan ? { plan: { name: baseName(plan.path), shortName: plan.slug, done: plan.done, total: plan.total } } : {}),
     ...(phase || plan ? {} : { hint: messages.startHint }),
     ...(live.syncNote ? { syncWarning: messages.syncWarning } : {}),
   }

@@ -72,7 +72,7 @@ test('buildPanel header: phase badge, plan progress and warnings', async () => {
   const model = buildPanel({ project: PROJECT, live: { ...LIVE, syncNote: 'partial' }, ui: UI, messages: PT })
   expect(model.header).toEqual({
     phase: { label: 'Executando', tone: 'claude' },
-    plan: { name: '2026-01-02-auth.md', done: 1, total: 5 },
+    plan: { name: '2026-01-02-auth.md', shortName: 'auth', done: 1, total: 5 },
     syncWarning: '⚠ Algumas tarefas não puderam ser lidas — /sp sync',
   })
 })
@@ -108,16 +108,23 @@ test('buildPanel project sections, keys and tones', async () => {
     {
       key: `plan:${AUTH}`,
       label: '2026-01-02-auth.md',
+      shortLabel: 'auth',
       planPath: AUTH,
       note: '1/5',
       progress: { done: 1, total: 5 },
       activity: 'running',
       current: 'T1',
     },
-    { key: `plan:${HOTFIX}`, label: '2026-01-03-hotfix.md', planPath: HOTFIX, note: 'sem tasks.json' },
+    {
+      key: `plan:${HOTFIX}`,
+      label: '2026-01-03-hotfix.md',
+      shortLabel: 'hotfix',
+      planPath: HOTFIX,
+      note: 'sem tasks.json',
+    },
   ])
   expect(model.sections[2]!.items).toEqual([
-    { key: `nospec:${HOTFIX}`, label: '2026-01-03-hotfix.md', planPath: HOTFIX },
+    { key: `nospec:${HOTFIX}`, label: '2026-01-03-hotfix.md', shortLabel: 'hotfix', planPath: HOTFIX },
   ])
 })
 
@@ -178,6 +185,7 @@ test('buildPanel complete section is collapsible and follows the expanded list',
 test('buildPanel detail of the selected plan; a vanished selection shows none', async () => {
   const model = buildPanel({ project: PROJECT, live: LIVE, ui: { ...UI, selected: AUTH }, messages: PT })
   expect(model.detail?.title).toBe('2026-01-02-auth.md')
+  expect(model.detail?.shortTitle).toBe('auth')
   expect(model.detail?.note).toBe('1/5')
   expect(model.detail?.specLine).toBe('Spec: 2026-01-01-auth-design.md')
   expect(model.detail?.rows.map(row => row.key)).toEqual(['task:1', 'task:2', 'task:3', 'task:4', 'task:0'])
@@ -187,7 +195,7 @@ test('buildPanel detail of the selected plan; a vanished selection shows none', 
 
 test('buildPanel active plan without tasks keeps a zero total', async () => {
   const model = buildPanel({ project: PROJECT, live: { sessionTasks: {}, activePlan: HOTFIX }, ui: UI, messages: PT })
-  expect(model.header.plan).toEqual({ name: '2026-01-03-hotfix.md', done: 0, total: 0 })
+  expect(model.header.plan).toEqual({ name: '2026-01-03-hotfix.md', shortName: 'hotfix', done: 0, total: 0 })
   expect(model.now).toEqual([])
   expect(model.done).toBeUndefined()
 })
