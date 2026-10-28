@@ -158,6 +158,10 @@ test('/sp status and /sp sync', async ($, on) => {
   expect(status.text).toContain('  · 2026-09-02-hotfix.md  sem tasks.json')
   const usage = await $.command.run({ ...RUN, command: 'sp', args: 'xyz' })
   expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync · /sp lang [pt-BR|en|auto]')
+  const syncExtra = await $.command.run({ ...RUN, command: 'sp', args: 'sync foo' })
+  expect(syncExtra.text).toBe(usage.text)
+  const statusExtra = await $.command.run({ ...RUN, command: 'sp', args: 'status foo' })
+  expect(statusExtra.text).toBe(usage.text)
 })
 
 test('TaskList denied during backfill flags a partial sync', async ($, on) => {
@@ -327,4 +331,56 @@ test('/sp lang forces, reports and resets the language', async ($, on) => {
   expect(bad.text).toBe('Usage: /sp lang pt-BR|en|auto')
   const reset = await $.command.run({ ...RUN, command: 'sp', args: 'lang auto' })
   expect(reset.text).toBe('Idioma do painel: português (pt-BR), automático.')
+})
+
+test('an already-mounted pane redraws in English after /sp lang en', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: 'Projeto', in: 'panel' })).toBeDefined()
+  await $.command.run({ ...RUN, command: 'sp', args: 'lang en' })
+  await settle()
+  expect(await ui.find({ type: 'Text', text: 'Project', in: 'panel' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('command.describe follows the session language', async ($, on) => {
+  engine(on)
+  on('command.describe', (_, e) => ({ description: e.description, isHidden: e.isHidden }))
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const describe = () =>
+    $.command.describe({
+      command: 'sp',
+      description: 'engine default',
+      isHidden: false,
+      immediate: false,
+      provider: { plugin: 'superpowers-panel', tier: 'user' },
+    } as never)
+  const portuguese = await describe()
+  await $.command.run({ ...RUN, command: 'sp', args: 'lang en' })
+  const english = await describe()
+  expect(portuguese.description).not.toBe(english.description)
+  expect(portuguese.description).toBe('Painel superpowers: /sp, /sp status, /sp sync, /sp lang')
+  expect(english.description).toBe('Superpowers panel: /sp, /sp status, /sp sync, /sp lang')
+})
+
+test('the progress bar fits the region width instead of following its content', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  await $.tool.call({
+    tool: 'Skill',
+    skill: 'superpowers-extended-cc:executing-plans',
+    args: 'docs/superpowers/plans/2026-10-03-auth.md',
+  })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.resize({ columns: 30, rows: 30, in: 'panel' })
+  const bars = (await ui.findAll({ type: 'Text', text: /^━+$/, in: 'panel' })) ?? []
+  const suffix = await ui.find({ type: 'Text', text: /\d+\/\d+ · \d+%/, in: 'panel' })
+  const used = bars.reduce((sum, bar) => sum + (bar.text?.length ?? 0), 0) + (suffix?.text?.length ?? 0)
+  expect(bars).toHaveLength(2)
+  expect(used).toBeLessThanOrEqual(30 - 4)
+  await ui.unmount()
 })

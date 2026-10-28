@@ -78,3 +78,10 @@ export const barCells = (shownDone: number, total: number, cells: number): { fil
 }
 
 export const percent = (done: number, total: number): number => (total === 0 ? 0 : Math.round((done / total) * 100))
+
+// A just-finished task lives in `flashes` for a moment: drawing it also from the done
+// list would repeat the sibling key.
+export const withoutFlashing = (motion: Motion, rows: readonly Row[]): Row[] => {
+  const flashing = new Set(motion.flashes.map(flash => flash.row.key))
+  return rows.filter(row => !flashing.has(row.key))
+}

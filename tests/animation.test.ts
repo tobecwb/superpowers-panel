@@ -1,5 +1,15 @@
 import { expect, test } from 'claude-code/testing'
-import { barCells, isSpinning, type Motion, observe, percent, SPINNER, step, TICK_MS } from '../hooks/animation'
+import {
+  barCells,
+  isSpinning,
+  type Motion,
+  observe,
+  percent,
+  SPINNER,
+  step,
+  TICK_MS,
+  withoutFlashing,
+} from '../hooks/animation'
 import type { PanelModel, Row } from '../hooks/view-model'
 
 const LABELS: PanelModel['labels'] = {
@@ -102,4 +112,14 @@ test('barCells and percent survive degenerate sizes', async () => {
   expect(barCells(5, 10, -3)).toEqual({ filled: 0, empty: 0 })
   expect(percent(0, 0)).toBe(0)
   expect(percent(5, 9)).toBe(56)
+})
+
+test('a flashing row stays out of the done list until its flash ends', async () => {
+  const start = observe(undefined, model({ now: [row(1, 'running')] }))
+  const finished = model({
+    done: { label: '1', expanded: true, keys: ['task:1'], rows: [row(1, 'done')] },
+  })
+  const flashing = observe(start, finished)
+  expect(withoutFlashing(flashing, finished.done?.rows ?? [])).toEqual([])
+  expect(withoutFlashing(run(flashing, 19), finished.done?.rows ?? [])).toEqual([row(1, 'done')])
 })

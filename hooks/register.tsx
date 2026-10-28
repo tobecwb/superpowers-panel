@@ -44,7 +44,10 @@ const languageSetting = ($: EngineInterface): Promise<unknown> =>
   })
 
 const resolveLocale = async ($: EngineInterface): Promise<Locale> => {
-  const langEnv = await $.env.get('LANG').catch(() => undefined)
+  const langEnv = await $.env.get('LANG').catch(error => {
+    debug($, error)
+    return undefined
+  })
   const locale = detectLocale(await read($, localeAtom), await languageSetting($), langEnv)
   await update($, resolvedLocaleAtom, () => locale)
   $.ui.invalidate('command.describe')
@@ -138,6 +141,8 @@ const languageCommand = async ($: EngineInterface, argument: string) => {
   return { text: messagesFor(await resolveLocale($)).replies.languageSet(choice === 'auto') }
 }
 
+const takesNoArguments = (subcommand: string): boolean => subcommand === 'sync' || subcommand === 'status'
+
 const togglePane = async ($: EngineInterface) => {
   const messages = await sessionMessages($)
   if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
@@ -146,6 +151,20 @@ const togglePane = async ($: EngineInterface) => {
   }
   const opened = await $.ui.open({ id: PANE, title: messages.title })
   return { text: opened.isPlaced ? messages.replies.opened : messages.replies.waitingRoom(opened.reason) }
+}
+
+const runCommand = async ($: EngineInterface, args: string) => {
+  const [subcommand = '', ...rest] = args.trim().split(/\s+/)
+  if (takesNoArguments(subcommand) && rest.length > 0) return { text: (await sessionMessages($)).usage }
+  if (subcommand === 'sync') {
+    await rescan($)
+    await backfill($)
+    return { text: (await sessionMessages($)).replies.synced }
+  }
+  if (subcommand === 'status') return { text: textView(await panelModel($)) }
+  if (subcommand === 'lang') return languageCommand($, rest.join(' '))
+  if (subcommand !== '') return { text: (await sessionMessages($)).usage }
+  return togglePane($)
 }
 
 export const register: Register = on => {
@@ -219,18 +238,7 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'sp' }, async ($, e) => {
-    const [subcommand = '', ...rest] = e.args.trim().split(/\s+/)
-    if (subcommand === 'sync') {
-      await rescan($)
-      await backfill($)
-      return { text: (await sessionMessages($)).replies.synced }
-    }
-    if (subcommand === 'status') return { text: textView(await panelModel($)) }
-    if (subcommand === 'lang') return languageCommand($, rest.join(' '))
-    if (subcommand !== '') return { text: (await sessionMessages($)).usage }
-    return togglePane($)
-  })
+  on('command.run', { command: 'sp' }, ($, e) => runCommand($, e.args))
 
   on('ui.render', { component: 'Pane', requestId: 'superpowers' }, async ($, e) => {
     const model = await panelModel($)
@@ -238,7 +246,7 @@ export const register: Register = on => {
     // fragment), so `'Client' in elements` is always true: the surface tells instead.
     if (e.surface === 'terminal' || e.surface === 'desktop') {
       const { Client } = $.ui.resolve(e)
-      return <Client key="panel" module="./panel.tsx" props={model} />
+      return <Client key="panel" module="./panel.tsx" width="100%" props={model} />
     }
     const { Box, Text } = $.ui.resolve(e)
     return (

@@ -1,6 +1,16 @@
 import type { ClientElements, ClientModule, Color, JsonValue, RenderElement } from 'claude-code'
 
-import { barCells, isSpinning, type Motion, observe, percent, SPINNER, step, TICK_MS } from './animation'
+import {
+  barCells,
+  isSpinning,
+  type Motion,
+  observe,
+  percent,
+  SPINNER,
+  step,
+  TICK_MS,
+  withoutFlashing,
+} from './animation'
 import type { PanelAction } from './panel-action'
 import {
   type Detail,
@@ -121,7 +131,7 @@ const rowsSection = (draw: Draw, title: string, rows: RenderElement[]): RenderEl
 }
 
 const nowRows = (draw: Draw): RenderElement[] => [
-  ...draw.motion.model.now.map(row => rowView(draw, row)),
+  ...withoutFlashing(draw.motion, draw.motion.model.now).map(row => rowView(draw, row)),
   ...draw.motion.flashes.map(flash => rowView(draw, flash.row, flash.ticksLeft)),
 ]
 
@@ -138,7 +148,7 @@ const doneView = (draw: Draw): RenderElement | false => {
           plain
           dimColor
         />
-        {done.rows.map(row => rowView(draw, row))}
+        {withoutFlashing(draw.motion, done.rows).map(row => rowView(draw, row))}
       </Box>
     )
   )
@@ -170,12 +180,9 @@ const sectionView = (draw: Draw, section: Section): RenderElement[] => {
   const { Text, Button } = draw.elements
   const title = `${section.icon} ${section.header}`
   const header = section.collapsible ? (
-    <Button
-      key={section.id}
-      label={`${arrow(section.expanded)} ${title}`}
-      onPress={() => draw.send({ action: 'toggle', key: section.id })}
-      plain
-    />
+    <Button key={section.id} onPress={() => draw.send({ action: 'toggle', key: section.id })} plain>
+      <Text color={section.tone}>{`${arrow(section.expanded)} ${title}`}</Text>
+    </Button>
   ) : (
     <Text color={section.tone}>{title}</Text>
   )
