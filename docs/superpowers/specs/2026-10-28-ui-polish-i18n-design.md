@@ -69,14 +69,16 @@ JSON simples (props de `Client` têm limite de 100 000 caracteres), com textos *
 - `header`: `{ phase?: { label, tone }, plan?: { name, done, total }, emptyHint? , syncWarning? }`
 - `now: Row[]`: tarefas em andamento e user-gates pendentes.
 - `next: Row[]`: pendentes e bloqueadas.
-- `done: { label, expanded, rows: Row[] }` (rows vazio se recolhido; ausente se não há concluídas).
+- `done: { label, expanded, keys: string[], rows: Row[] }` (`rows` vazio se recolhido, `keys` sempre
+  presente para a animação de conclusão; ausente se não há concluídas).
 - `outside: Row[]`: tarefas da sessão fora do plano.
 - `project: { title, sections: Section[] }`, com `Section = { id, header, tone, collapsible, expanded, items: Item[] }`
   e `Item = { key, label, selectable }`.
 - `detail?: { title, specLine, rows: Row[], closeLabel }`.
 - `labels`: rótulos fixos do painel (títulos das seções, "fechar", etc.).
 
-`Row = { key, kind: 'running' | 'gate' | 'pending' | 'blocked' | 'done', id, text, note? }`.
+`Row = { key, kind: 'running' | 'gate' | 'pending' | 'blocked' | 'done', text, note? }` (o `T<id>`
+vai dentro de `text`).
 `key` é estável (`task:<id>`, `session:<id>`, `spec:<path>`, `plan:<path>`, `nospec:<path>`) para a
 animação reconhecer a mesma linha entre renders.
 
