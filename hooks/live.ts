@@ -1,7 +1,7 @@
 import type { Live, SessionTask } from '../types'
 import { toStatus } from './parse'
 
-export const SKILL_PREFIX = 'superpowers-extended-cc:'
+const SKILL_PREFIX = 'superpowers-extended-cc:'
 export const EMPTY_LIVE: Live = { sessionTasks: {} }
 
 const PLAN_SKILLS = new Set(['executing-plans', 'subagent-driven-development'])

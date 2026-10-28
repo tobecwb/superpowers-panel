@@ -2,7 +2,6 @@ import type { Project } from '../types'
 
 // Os atoms em si (`atom(...)`) ficam em register.tsx: o engine só aceita
 // `read`/`update` com uma referência declarada no próprio arquivo da chamada.
-export const PLUGIN = 'superpowers-panel'
 export const PANE = 'superpowers'
 export const TITLE = 'Superpowers'
 

@@ -106,7 +106,7 @@ export const register: Register = on => {
       debug($, error)
       return ran
     }
-  }).catch(($, e, next) => next(e)) // falha aberta: nunca bloqueia o início
+  }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia o início
 
   on('classic.CwdChanged', async ($, e, next) => {
     const ran = await next(e)
@@ -117,7 +117,7 @@ export const register: Register = on => {
       debug($, error)
       return ran
     }
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 
   on('classic.FileChanged', async ($, e, next) => {
     const ran = await next(e)
@@ -128,7 +128,7 @@ export const register: Register = on => {
       debug($, error)
       return ran
     }
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 
   on('tool.call', async ($, e, next) => {
     const tool = String(e.tool)
@@ -147,14 +147,14 @@ export const register: Register = on => {
       debug($, error)
     }
     return ran
-  }).catch(($, e, next) => next(e)) // falha aberta: nunca bloqueia a ferramenta
+  }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia a ferramenta
 
   on('prompt.submit', async ($, e, next) => {
     const skill = parsePromptSkill(e.text)
     if (skill)
       await update($, liveAtom, live => applyEvent(live, { kind: 'skill', ...skill })).catch(error => debug($, error))
     return next(e)
-  }).catch(($, e, next) => next(e)) // falha aberta: nunca bloqueia o prompt
+  }).catch((_$, e, next) => next(e)) // falha aberta: nunca bloqueia o prompt
 
   on('turn.complete', async ($, e, next) => {
     void rescan($).catch(error => debug($, error))

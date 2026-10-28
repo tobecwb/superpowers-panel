@@ -1,9 +1,8 @@
 import type { BoxProps, ButtonProps, ElementConstructor, RenderElement, TextProps } from 'claude-code'
 
 import type { Live, Project } from '../types'
-import { derive, groupTasks, type PlanView } from './link'
+import { baseName, derive, groupTasks, type PlanView } from './link'
 import {
-  baseName,
   completeItem,
   detailLines,
   incompleteItem,

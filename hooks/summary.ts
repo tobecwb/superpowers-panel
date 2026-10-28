@@ -1,9 +1,7 @@
 import type { Live, PlanTask, Project, SessionTask } from '../types'
-import { type Derived, groupTasks, isBlocked, type PlanView } from './link'
+import { baseName, type Derived, groupTasks, isBlocked, type PlanView } from './link'
 
 const CELLS = 10
-
-export const baseName = (path: string): string => path.split('/').pop() ?? path
 
 export const displaySubject = (subject: string): string => subject.replace(/^Task\s+\d+:\s*/, '')
 

@@ -25,7 +25,7 @@ export type TaskGroups = {
   done: PlanTask[]
 }
 
-const baseName = (path: string) => path.split('/').pop() ?? path
+export const baseName = (path: string): string => path.split('/').pop() ?? path
 
 export const linkPlan = (plan: Plan, specs: readonly Spec[]): { spec?: Spec; specMissing: boolean } => {
   if (plan.specRef !== undefined) {
@@ -48,7 +48,7 @@ export const activePlanPath = (plans: readonly Plan[], live: Live): string | und
   return best?.path
 }
 
-export const mergeStatuses = (tasks: readonly PlanTask[], session: Record<string, SessionTask>): PlanTask[] => {
+const mergeStatuses = (tasks: readonly PlanTask[], session: Record<string, SessionTask>): PlanTask[] => {
   const bySubject = new Map(Object.values(session).map(task => [task.subject, task.status]))
   return tasks.map(task => {
     const status = bySubject.get(task.subject)

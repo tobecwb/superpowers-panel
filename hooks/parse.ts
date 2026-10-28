@@ -28,7 +28,7 @@ export const parseMetadata = (description: string): Record<string, unknown> | un
   }
 }
 
-export const isUserGate = (meta: Record<string, unknown> | undefined): boolean =>
+const isUserGate = (meta: Record<string, unknown> | undefined): boolean =>
   meta?.userGate === true || (Array.isArray(meta?.tags) && meta.tags.includes('user-gate'))
 
 export const parseTasksFile = (text: string): PlanTask[] | undefined => {
