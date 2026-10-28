@@ -53,6 +53,13 @@ test('plano ativo: explícito, senão maior interseção de subjects', async () 
   expect(activePlanPath([a, b], EMPTY)).toBeUndefined()
 })
 
+test('empate de interseção prefere o plano mais novo', async () => {
+  const a = plan({ path: 'docs/superpowers/plans/2026-01-01-a.md', tasks: [task(0, 'pending')] })
+  const b = plan({ path: 'docs/superpowers/plans/2026-02-01-b.md', tasks: [task(0, 'pending')] })
+  const live: Live = { sessionTasks: { '7': { id: '7', subject: 'Task 0: T0', status: 'pending', blockedBy: [] } } }
+  expect(activePlanPath([a, b], live)).toBe('docs/superpowers/plans/2026-02-01-b.md')
+})
+
 test('status nativo prevalece no plano ativo e o resto vai para outside', async () => {
   const project: Project = {
     hasSuperpowersDir: true, scannedAt: 1, specs: [],

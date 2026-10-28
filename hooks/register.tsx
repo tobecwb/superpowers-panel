@@ -55,7 +55,11 @@ const backfill = async ($: EngineInterface) => {
     live = { ...live, syncNote: 'sincronização parcial' }
   }
   const synced = live
-  await update($, liveAtom, () => synced)
+  await update($, liveAtom, current => ({
+    ...synced,
+    phase: current.phase ?? synced.phase,
+    activePlan: current.activePlan ?? synced.activePlan,
+  }))
 }
 
 const initialize = async ($: EngineInterface) => {

@@ -43,7 +43,7 @@ export const activePlanPath = (plans: readonly Plan[], live: Live): string | und
   let best: { path: string; hits: number } | undefined
   for (const plan of plans) {
     const hits = plan.tasks.filter(task => subjects.has(task.subject)).length
-    if (hits > 0 && (!best || hits > best.hits)) best = { path: plan.path, hits }
+    if (hits > 0 && (!best || hits >= best.hits)) best = { path: plan.path, hits }
   }
   return best?.path
 }

@@ -78,3 +78,41 @@ test('replay reconstrói tarefas e fase do transcript', async () => {
   expect(live.phase).toBe('brainstorming')
   expect(Object.values(live.sessionTasks)).toEqual([{ id: '1', subject: 'Task 0: A', status: 'in_progress', blockedBy: [] }])
 })
+
+test('update de id desconhecido sem subject não cria tarefa', async () => {
+  const live = applyEvent(EMPTY_LIVE, { kind: 'update', id: '3', status: 'in_progress', addBlockedBy: [] })
+  expect(live.sessionTasks).toEqual({})
+})
+
+test('update de id desconhecido com subject cria a tarefa com esse subject', async () => {
+  const live = applyEvent(EMPTY_LIVE, { kind: 'update', id: '3', subject: 'Nova', status: 'in_progress', addBlockedBy: [] })
+  expect(live.sessionTasks['3']).toEqual({ id: '3', subject: 'Nova', status: 'in_progress', blockedBy: [] })
+})
+
+test('replay sem result no TaskCreate não vaza #id', async () => {
+  const live = replay([
+    {
+      role: 'assistant',
+      text: '',
+      toolUses: [
+        { tool_use_id: 'a', tool: 'TaskCreate', input: { subject: 'A' } },
+        { tool_use_id: 'b', tool: 'TaskUpdate', input: { taskId: '1', status: 'in_progress' }, result: { success: true } },
+      ],
+    },
+  ])
+  expect(Object.values(live.sessionTasks).filter(task => task.subject.startsWith('#'))).toEqual([])
+})
+
+test('replay ignora usos recusados (result em texto)', async () => {
+  const live = replay([
+    {
+      role: 'assistant',
+      text: '',
+      toolUses: [
+        { tool_use_id: 'a', tool: 'TaskCreate', input: { subject: 'A' }, result: { task: { id: '1', subject: 'A' } } },
+        { tool_use_id: 'b', tool: 'TaskUpdate', input: { taskId: '1', status: 'completed' }, result: 'denied' },
+      ],
+    },
+  ])
+  expect(live.sessionTasks['1']?.status).toBe('pending')
+})

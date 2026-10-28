@@ -96,7 +96,9 @@ export const applyEvent = (live: Live, event: LiveEvent): Live => {
     case 'update': {
       const { [event.id]: current, ...rest } = live.sessionTasks
       if (event.status === 'deleted') return { ...live, sessionTasks: rest }
-      const base: SessionTask = current ?? { id: event.id, subject: `#${event.id}`, status: 'pending', blockedBy: [] }
+      // ID nativo nunca é exibido: sem subject conhecido não há o que mostrar.
+      if (!current && event.subject === undefined) return live
+      const base: SessionTask = current ?? { id: event.id, subject: event.subject ?? '', status: 'pending', blockedBy: [] }
       return {
         ...live,
         sessionTasks: {
@@ -133,7 +135,7 @@ export const replay = (messages: readonly MessageLike[]): Live =>
       return skill ? applyEvent(live, { kind: 'skill', ...skill }) : live
     }
     return message.toolUses.reduce((acc, use) => {
-      if (use.isError) return acc
+      if (use.isError || typeof use.result === 'string') return acc
       const event = toolEvent(use.tool, use.input, use.result)
       return event ? applyEvent(acc, event) : acc
     }, live)
