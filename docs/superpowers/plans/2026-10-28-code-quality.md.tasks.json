@@ -73,12 +73,12 @@
     {
       "id": 8,
       "subject": "Task 8: Convenções escritas e pre-commit",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Escrever as convenções em `CLAUDE.md`, ativar o pre-commit versionado via `bun install` e mostrar que o repositório limpo passa e um commit com violação é bloqueado.\n\n**Files:**\n- Create: `CLAUDE.md`, `.githooks/pre-commit`\n- Modify: `package.json` (script `prepare`)\n\n**Acceptance Criteria:**\n- [ ] `bun install` define `git config core.hooksPath` = `.githooks`\n- [ ] `bun run check` sai com código 0 no repositório limpo\n- [ ] Um commit de prova com `// não deveria passar` em `hooks/atoms.ts` é rejeitado pelo hook (saída do `check-comments` visível, commit não criado)\n- [ ] Um commit de prova com uma função de complexidade > 10 em `hooks/atoms.ts` é rejeitado (diagnóstico `noExcessiveCognitiveComplexity` visível)\n- [ ] Depois das provas, `git status` fica limpo e `git log -1` mostra o commit desta task\n\n**Verify:** `bun install && git config core.hooksPath && bun run check` → `.githooks`, check verde\n\n```json:metadata\n{\"files\": [\".githooks/pre-commit\", \"CLAUDE.md\", \"package.json\"], \"verifyCommand\": \"bun install && git config core.hooksPath && bun run check\", \"acceptanceCriteria\": [\"`bun install` define `git config core.hooksPath` = `.githooks`\", \"`bun run check` sai com código 0 no repositório limpo\", \"Um commit de prova com `// não deveria passar` em `hooks/atoms.ts` é rejeitado pelo hook (saída do `check-comments` visível, commit não criado)\", \"Um commit de prova com uma função de complexidade > 10 em `hooks/atoms.ts` é rejeitado (diagnóstico `noExcessiveCognitiveComplexity` visível)\", \"Depois das provas, `git status` fica limpo e `git log -1` mostra o commit desta task\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         7
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:40:19-03:00"
+  "lastUpdated": "2026-10-28T11:43:52-03:00"
 }
