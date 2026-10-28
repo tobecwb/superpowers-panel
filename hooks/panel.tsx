@@ -50,7 +50,16 @@ const ROW_COLOR: Record<RowKind, Color | undefined> = {
   done: 'success',
 }
 
+// Longer than any pane is wide: the desktop bar clips it to the share it is given.
+const DESKTOP_BAR_GLYPHS = 400
+
 const arrow = (isOpen: boolean): string => (isOpen ? '▾' : '▸')
+
+// A column stretches its children: the desktop then centres a native button's label
+// and paints a background across the whole width. A row keeps each at its own size.
+const atOwnWidth = ({ elements }: Draw, key: string, child: RenderElement): RenderElement => (
+  <elements.Box key={key}>{child}</elements.Box>
+)
 
 const spinnerFrame = (motion: Motion): string => SPINNER[motion.frame] ?? KIND_ICON.running
 
@@ -84,22 +93,44 @@ const rowView = ({ elements, motion }: Draw, row: Row, flashTicks = 0): RenderEl
   )
 }
 
-const phaseBadge = ({ elements, motion }: Draw): RenderElement => {
-  const { Text } = elements
-  const { model } = motion
+const phaseBadge = (draw: Draw): RenderElement => {
+  const { Text } = draw.elements
+  const { model } = draw.motion
   const phase = model.header.phase
   if (phase === undefined) return <Text bold>{model.labels.noFlow}</Text>
-  const spinner = isSpinning(model) ? `${spinnerFrame(motion)} ` : ''
-  return (
+  const spinner = isSpinning(model) ? `${spinnerFrame(draw.motion)} ` : ''
+  return atOwnWidth(
+    draw,
+    'phase',
     <Text backgroundColor={phase.tone} color="inverseText" bold>
       {` ${spinner}${phase.label} `}
-    </Text>
+    </Text>,
+  )
+}
+
+// Widths in percent instead of counted glyphs, so the bar fills the line in any font.
+const desktopProgressView = (draw: Draw, plan: { total: number }, suffix: string): RenderElement => {
+  const { Box, Text } = draw.elements
+  const glyphs = '━'.repeat(DESKTOP_BAR_GLYPHS)
+  return (
+    <Box>
+      <Box flexGrow={1} height={1} overflow="hidden">
+        <Box width={`${percent(draw.motion.shownDone, plan.total)}%`} overflow="hidden">
+          <Text color="success">{glyphs}</Text>
+        </Box>
+        <Box flexGrow={1} overflow="hidden">
+          <Text color="subtle">{glyphs}</Text>
+        </Box>
+      </Box>
+      <Text dimColor>{suffix}</Text>
+    </Box>
   )
 }
 
 const progressView = (draw: Draw, plan: { done: number; total: number }): RenderElement => {
   const { Box, Text } = draw.elements
   const suffix = ` ${plan.done}/${plan.total} · ${percent(plan.done, plan.total)}%`
+  if (draw.motion.model.surface === 'desktop') return desktopProgressView(draw, plan, suffix)
   const { filled, empty } = barCells(draw.motion.shownDone, plan.total, draw.columns - CARD_CHROME - suffix.length)
   return (
     <Box>
@@ -148,15 +179,18 @@ const nowRows = (draw: Draw): RenderElement[] => [
   ...draw.motion.flashes.map(flash => rowView(draw, flash.row, flash.ticksLeft)),
 ]
 
-const doneToggle = (draw: Draw, done: DoneGroup, key: string): RenderElement => (
-  <draw.elements.Button
-    key={key}
-    label={`${arrow(done.expanded)} ${KIND_ICON.done} ${done.label}`}
-    onPress={() => draw.send({ action: 'toggle', key })}
-    plain
-    dimColor
-  />
-)
+const doneToggle = (draw: Draw, done: DoneGroup, key: string): RenderElement =>
+  atOwnWidth(
+    draw,
+    key,
+    <draw.elements.Button
+      key={key}
+      label={`${arrow(done.expanded)} ${KIND_ICON.done} ${done.label}`}
+      onPress={() => draw.send({ action: 'toggle', key })}
+      plain
+      dimColor
+    />,
+  )
 
 const doneView = (draw: Draw): RenderElement | false => {
   const { Box } = draw.elements
@@ -215,14 +249,16 @@ const planItemView = (draw: Draw, item: SectionItem, planPath: string): RenderEl
   })
   const note = noteText(item)
   const current = currentText(item)
-  return (
+  return atOwnWidth(
+    draw,
+    item.key,
     <Button key={item.key} onPress={() => draw.send({ action: 'select', key: planPath })} plain>
       <Text color={color} bold={item.activity !== undefined}>{`  ${itemIcon(draw.motion, item)} `}</Text>
       <Text bold={item.activity !== undefined}>{`${name}${itemGap(item)}`}</Text>
       {item.progress && itemBar(draw, item.progress)}
       {note !== undefined && <Text dimColor>{note}</Text>}
       {current !== undefined && <Text color={color}>{current}</Text>}
-    </Button>
+    </Button>,
   )
 }
 
@@ -241,9 +277,13 @@ const sectionView = (draw: Draw, section: Section): RenderElement[] => {
   const { Text, Button } = draw.elements
   const title = `${section.icon} ${section.header}`
   const header = section.collapsible ? (
-    <Button key={section.id} onPress={() => draw.send({ action: 'toggle', key: section.id })} plain>
-      <Text color={section.tone}>{`${arrow(section.expanded)} ${title}`}</Text>
-    </Button>
+    atOwnWidth(
+      draw,
+      section.id,
+      <Button key={section.id} onPress={() => draw.send({ action: 'toggle', key: section.id })} plain>
+        <Text color={section.tone}>{`${arrow(section.expanded)} ${title}`}</Text>
+      </Button>,
+    )
   ) : (
     <Text color={section.tone}>{title}</Text>
   )

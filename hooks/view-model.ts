@@ -67,6 +67,8 @@ export type PanelModel = {
   detail?: Detail
   // The pane's visible rows, which only the render hook knows; the panel hints at scrolling past them.
   bodyRows?: number
+  // Also only the render hook's: the desktop sets text in a proportional font, so counted glyphs miss its width.
+  surface?: 'terminal' | 'desktop'
   labels: Messages['labels']
 }
 
