@@ -34,8 +34,11 @@ const PANE = {
   },
 } as const
 
-const engine = (on: Parameters<TestBody>[1], taskList: unknown = { tasks: [] }) => {
+const TOOLS = ['TaskCreate', 'TaskUpdate', 'TaskList', 'Skill', 'Read', 'Write', 'Edit']
+
+const engine = (on: Parameters<TestBody>[1], taskList: unknown = { tasks: [] }, tools: readonly string[] = TOOLS) => {
   const opened: string[] = []
+  on('tool.list', () => ({ value: tools.map(name => ({ name, description: name, mcp: false })) }))
   on('command.register', () => ({ value: { command: 'sp' } }))
   on('ui.open', (_, e) => { opened.push(e.id); return { value: { isPlaced: true } } })
   on('ui.close', () => ({ value: undefined }))
@@ -54,6 +57,7 @@ const engine = (on: Parameters<TestBody>[1], taskList: unknown = { tasks: [] }) 
     return { value: text }
   })
   on('tool.call', (_, e) => {
+    if (!tools.includes(String(e.tool))) throw new Error(`no tool named "${String(e.tool)}"`)
     if (e.tool === 'TaskList') return taskList === 'deny' ? { deny: 'negado' } : { result: taskList }
     if (e.tool === 'TaskCreate') return { result: { task: { id: '42', subject: String((e as { subject?: unknown }).subject) } } }
     return { result: { success: true } }
@@ -114,4 +118,12 @@ test('TaskList negado no backfill marca sincronização parcial', async ($, on) 
   await settle()
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
   expect(status.text).toContain('sincronização parcial')
+})
+
+test('sessão sem a ferramenta TaskList não marca sincronização parcial', async ($, on) => {
+  engine(on, { tasks: [] }, ['Skill', 'Read', 'Write', 'Edit'])
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
+  expect(status.text).not.toContain('sincronização parcial')
 })

@@ -16,7 +16,7 @@ const liveAtom = atom({ plugin: 'superpowers-panel', key: 'live' } as const, EMP
 const expandedAtom = atom({ plugin: 'superpowers-panel', key: 'expanded' } as const, [] as string[], { shape: 'expanded-1' })
 
 const WATCHED = new Set(['TaskCreate', 'TaskUpdate', 'Skill', 'Read', 'Write', 'Edit'])
-const USAGE = 'Uso: /sp (abre/fecha o painel) · /sp status · /sp sync'
+const USAGE ='Uso: /sp (abre/fecha o painel) · /sp status · /sp sync'
 
 const debug = ($: EngineInterface, error: unknown) =>
   $.ui.log(`superpowers-panel: ${String(error)}`, { to: 'debug' })
@@ -46,10 +46,16 @@ const backfill = async ($: EngineInterface) => {
   const messages = await $.session.messages()
   let live = replay(Array.isArray(messages) ? (messages as readonly MessageLike[]) : [])
   try {
-    const ran = await $.tool.call({ tool: 'TaskList' })
-    const tasks = 'deny' in ran && ran.deny !== undefined ? undefined : taskListOf(ran.result)
-    if (!tasks) throw new Error('TaskList indisponível')
-    live = { ...applyEvent(live, { kind: 'snapshot', tasks }), syncNote: undefined }
+    // Sessão sem as ferramentas nativas de tarefa: nada a sincronizar, sem aviso.
+    const hasTaskList = (await $.tool.list()).some(tool => tool.name === 'TaskList')
+    if (hasTaskList) {
+      const ran = await $.tool.call({ tool: 'TaskList' })
+      const tasks = 'deny' in ran && ran.deny !== undefined ? undefined : taskListOf(ran.result)
+      if (!tasks) throw new Error('TaskList indisponível')
+      live = { ...applyEvent(live, { kind: 'snapshot', tasks }), syncNote: undefined }
+    } else {
+      live = { ...live, syncNote: undefined }
+    }
   } catch (error) {
     debug($, error)
     live = { ...live, syncNote: 'sincronização parcial' }
