@@ -37,7 +37,7 @@
     {
       "id": 4,
       "subject": "Task 4: projectSections, pane em partes e tool.call",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Extrair a montagem do bloco PROJETO para uma função pura usada tanto por `summarize` quanto pelo pane, quebrar `paneView` em partes com uma entrada só (objeto) e tirar a complexidade do handler `tool.call`, deixando `bun run lint` verde no repositório todo.\n\n**Files:**\n- Modify: `hooks/summary.ts`, `hooks/pane.tsx`, `hooks/register.tsx`\n- Test: `tests/summary.test.ts`, `tests/register.test.tsx`\n\n**Acceptance Criteria:**\n- [ ] `projectSections` devolve só as seções não vazias, na ordem specsWithoutPlan → incomplete → withoutSpec → complete, com os textos atuais (teste novo)\n- [ ] `summarize` e o pane consomem `projectSections`; nenhum dos dois monta mais os cabeçalhos `⚠ … spec(s) sem plano`, `◐ …`, `⚠ … plano(s) sem spec`, `✓ … plano(s) concluído(s)` por conta própria (`grep -c \"spec(s) sem plano\" hooks/*.ts*` = 1)\n- [ ] O pane tem as chaves `plan:docs/superpowers/plans/2026-09-02-hotfix.md` **e** `nospec:docs/superpowers/plans/2026-09-02-hotfix.md` (teste novo)\n- [ ] `paneView` recebe um único objeto `PaneInput`\n- [ ] `bun run lint` sai com código 0 (repositório inteiro)\n- [ ] `bun run typecheck && bun run test` saem com código 0; as 48 asserções originais intactas, mais os testes novos\n\n**Verify:** `bun run lint && bun run typecheck && bun run test` → sem diagnósticos, `50 pass`, `0 fail`\n\n```json:metadata\n{\"files\": [\"hooks/pane.tsx\", \"hooks/register.tsx\", \"hooks/summary.ts\", \"tests/register.test.tsx\", \"tests/summary.test.ts\"], \"verifyCommand\": \"bun run lint && bun run typecheck && bun run test\", \"acceptanceCriteria\": [\"`projectSections` devolve só as seções não vazias, na ordem specsWithoutPlan → incomplete → withoutSpec → complete, com os textos atuais (teste novo)\", \"`summarize` e o pane consomem `projectSections`; nenhum dos dois monta mais os cabeçalhos `⚠ … spec(s) sem plano`, `◐ …`, `⚠ … plano(s) sem spec`, `✓ … plano(s) concluído(s)` por conta própria (`grep -c \\\"spec(s) sem plano\\\" hooks/*.ts*` = 1)\", \"O pane tem as chaves `plan:docs/superpowers/plans/2026-09-02-hotfix.md` **e** `nospec:docs/superpowers/plans/2026-09-02-hotfix.md` (teste novo)\", \"`paneView` recebe um único objeto `PaneInput`\", \"`bun run lint` sai com código 0 (repositório inteiro)\", \"`bun run typecheck && bun run test` saem com código 0; as 48 asserções originais intactas, mais os testes novos\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         3
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:26:25-03:00"
+  "lastUpdated": "2026-10-28T11:30:03-03:00"
 }
