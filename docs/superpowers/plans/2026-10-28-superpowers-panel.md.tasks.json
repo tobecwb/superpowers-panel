@@ -58,12 +58,12 @@
     {
       "id": 6,
       "subject": "Task 6: Carregar o mod nesta sessão e conferir ao vivo",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Carregar o mod no Claude Code e confirmar, num projeto real com `docs/superpowers/`, que o painel abre e reflete specs, planos e tarefas.\n\n**Files:**\n- Create: `README.md`\n\n**Acceptance Criteria:**\n- [ ] `claude --plugin-dir /Volumes/DevSSD/dev/superpowers-mod` neste repositório abre o pane `Superpowers` automaticamente\n- [ ] O pane mostra `⚠ 0`/ausência de \"spec sem plano\" para `2026-10-28-superpowers-panel-design.md` (este plano liga a ela) e lista `2026-10-28-superpowers-panel.md` como incompleto ou concluído conforme o `.tasks.json`\n- [ ] `/sp status` imprime o resumo; `/sp` fecha e reabre o pane\n- [ ] Criar uma tarefa nativa (`TaskCreate`) aparece em \"FORA DO PLANO\" sem precisar de `/sp sync`\n- [ ] Uma sessão retomada (`--resume`) com tarefas já criadas as mostra após carregar (backfill)\n\n**Verify:** `claude --plugin-dir /Volumes/DevSSD/dev/superpowers-mod` neste repo, depois `/sp status` → primeira linha `Fase: …` e bloco `PROJETO` com os planos deste repositório\n\n```json:metadata\n{\"files\": [\"README.md\"], \"verifyCommand\": \"claude --plugin-dir /Volumes/DevSSD/dev/superpowers-mod\", \"acceptanceCriteria\": [\"`claude --plugin-dir /Volumes/DevSSD/dev/superpowers-mod` neste repositório abre o pane `Superpowers` automaticamente\", \"O pane mostra `⚠ 0`/ausência de \\\"spec sem plano\\\" para `2026-10-28-superpowers-panel-design.md` (este plano liga a ela) e lista `2026-10-28-superpowers-panel.md` como incompleto ou concluído conforme o `.tasks.json`\", \"`/sp status` imprime o resumo; `/sp` fecha e reabre o pane\", \"Criar uma tarefa nativa (`TaskCreate`) aparece em \\\"FORA DO PLANO\\\" sem precisar de `/sp sync`\", \"Uma sessão retomada (`--resume`) com tarefas já criadas as mostra após carregar (backfill)\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         5
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T13:26:09.615016+00:00"
+  "lastUpdated": "2026-10-28T13:44:45.717483+00:00"
 }
