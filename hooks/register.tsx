@@ -4,11 +4,12 @@ import { atom, read, update } from 'claude-code'
 import type { Project } from '../types'
 
 import { EMPTY_PROJECT, PANE, TITLE } from './atoms'
-import { derive } from './link'
+import { messagesFor } from './i18n'
 import { applyEvent, EMPTY_LIVE, type MessageLike, parsePromptSkill, replay, taskListOf, toolEvent } from './live'
-import { type PaneElements, paneView } from './pane'
+import { parsePanelAction, toggleKey } from './panel-action'
 import { coalesce, type FsLike, isSuperpowersPath, mergeWatchPaths, scanProject, watchTargets } from './scan'
-import { summarize } from './summary'
+import { textView } from './text-view'
+import { buildPanel, type PanelModel } from './view-model'
 
 // Bump the shape when the format changes: it discards what a previous version stored.
 const projectAtom = atom({ plugin: 'superpowers-panel', key: 'project' } as const, EMPTY_PROJECT, {
@@ -30,6 +31,17 @@ const fsOf = ($: EngineInterface): FsLike => ({
   list: path => $.fs.list(path),
   read: path => $.fs.read(path) as Promise<string>,
 })
+
+// Task 4 swaps this for the session's resolved locale.
+const messages = messagesFor('pt-BR')
+
+const panelModel = async ($: EngineInterface): Promise<PanelModel> =>
+  buildPanel({
+    project: await read($, projectAtom),
+    live: await read($, liveAtom),
+    ui: { expanded: await read($, expandedAtom), selected: await read($, selectedAtom) },
+    messages,
+  })
 
 // The engine only accepts `$` passed to top-level functions and `update` with the
 // atom written at the call site: the work serialized by `coalesce` only scans and
@@ -55,14 +67,14 @@ const backfill = async ($: EngineInterface) => {
     if (hasTaskList) {
       const hookResult = await $.tool.call({ tool: 'TaskList' })
       const tasks = 'deny' in hookResult && hookResult.deny !== undefined ? undefined : taskListOf(hookResult.result)
-      if (!tasks) throw new Error('TaskList indisponível')
+      if (!tasks) throw new Error('TaskList unavailable')
       live = { ...applyEvent(live, { kind: 'snapshot', tasks }), syncNote: undefined }
     } else {
       live = { ...live, syncNote: undefined }
     }
   } catch (error) {
     debug($, error)
-    live = { ...live, syncNote: 'sincronização parcial' }
+    live = { ...live, syncNote: 'partial' }
   }
   const synced = live
   await update($, liveAtom, current => ({
@@ -167,11 +179,7 @@ export const register: Register = on => {
       await backfill($)
       return { text: 'Superpowers: sincronizado.' }
     }
-    if (subcommand === 'status') {
-      const project = await read($, projectAtom)
-      const live = await read($, liveAtom)
-      return { text: summarize(derive(project, live), project, live) }
-    }
+    if (subcommand === 'status') return { text: textView(await panelModel($)) }
     if (subcommand !== '') return { text: USAGE }
     if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
       await $.ui.close({ id: PANE })
@@ -182,19 +190,31 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: 'superpowers' }, async ($, e) => {
-    const elements: PaneElements = $.ui.resolve(e)
-    const project = await read($, projectAtom)
-    const live = await read($, liveAtom)
-    const expanded = await read($, expandedAtom)
-    const onToggle = (key: string) => () => {
-      void update($, expandedAtom, list =>
-        list.includes(key) ? list.filter(expandedKey => expandedKey !== key) : [...list, key],
-      )
+    const model = await panelModel($)
+    // `resolve` completes every table with all element names (a missing one draws a
+    // fragment), so `'Client' in elements` is always true: the surface tells instead.
+    if (e.surface === 'terminal' || e.surface === 'desktop') {
+      const { Client } = $.ui.resolve(e)
+      return <Client key="panel" module="./panel.tsx" props={model} />
     }
-    const selected = await read($, selectedAtom)
-    const onSelect = (path: string) => () => {
-      void update($, selectedAtom, current => (current === path ? '' : path))
-    }
-    return paneView({ elements, project, live, expanded, selected, onToggle, onSelect })
+    const { Box, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        {textView(model)
+          .split('\n')
+          .map((line, index) => (
+            <Text key={String(index)}>{line}</Text>
+          ))}
+      </Box>
+    )
   })
+
+  on('ui.message', async ($, e, next) => {
+    const action = parsePanelAction(e.data)
+    if (action?.action === 'toggle') await update($, expandedAtom, list => toggleKey(list, action.key))
+    else if (action?.action === 'select')
+      await update($, selectedAtom, current => (current === action.key ? '' : action.key))
+    else debug($, `unknown panel message: ${JSON.stringify(e.data)}`)
+    return next(e)
+  }).catch((_$, e, next) => next(e))
 }

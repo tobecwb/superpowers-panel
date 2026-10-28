@@ -33,7 +33,7 @@ export type Section = {
 
 type DoneGroup = { label: string; expanded: boolean; keys: string[]; rows: Row[] }
 
-type Detail = { path: string; title: string; note: string; specLine: string; rows: Row[] }
+export type Detail = { path: string; title: string; note: string; specLine: string; rows: Row[] }
 
 export type PanelModel = {
   isEmpty: boolean

@@ -99,13 +99,13 @@ test('opens the pane and shows the project alerts', async ($, on) => {
   expect(opened).toContain('superpowers')
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /spec\(s\) sem plano/ }))?.text).toBe('⚠ 1 spec(s) sem plano')
-  expect((await ui.find({ type: 'Text', text: /billing/ }))?.text).toBe('  · 2026-10-02-billing-design.md')
-  expect((await ui.find({ type: 'Text', text: /sem spec/ }))?.text).toBe('⚠ 1 plano(s) sem spec')
+  expect((await ui.find({ type: 'Text', text: /spec sem plano/, in: 'panel' }))?.text).toBe('⚠ 1 spec sem plano')
+  expect((await ui.find({ type: 'Text', text: /billing/, in: 'panel' }))?.text).toBe('  · 2026-10-02-billing-design.md')
+  expect((await ui.find({ type: 'Text', text: /sem spec/, in: 'panel' }))?.text).toBe('⚠ 1 plano sem spec')
   await ui.unmount()
 })
 
-test('live run: skill + TaskCreate/TaskUpdate change the pane', async ($, on) => {
+test('live run: skill + TaskCreate/TaskUpdate change the pane, and the spinner turns', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
@@ -118,10 +118,16 @@ test('live run: skill + TaskCreate/TaskUpdate change the pane', async ($, on) =>
   await $.tool.call({ tool: 'TaskUpdate', taskId: '42', status: 'in_progress' })
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /^Fase/ }))?.text).toBe('Fase: ▶ executing-plans')
-  expect((await ui.find({ type: 'Text', text: /^Plano:/ }))?.text).toBe('Plano: 2026-10-03-auth.md  ███░░░░░░░ 1/3')
-  expect((await ui.find({ type: 'Text', text: /T1 Refresh/ }))?.text).toBe('▶ T1 Refresh  em andamento')
-  expect((await ui.find({ type: 'Text', text: /T2 Gate/ }))?.text).toBe('⊘ T2 Gate E2E  bloqueada por T1  🔒 user-gate')
+  const badge = () => ui.find({ type: 'Text', text: /Executando/, in: 'panel' })
+  expect((await badge())?.text).toBe(' ⠋ Executando ')
+  expect(await ui.find({ type: 'Text', text: '2026-10-03-auth.md', in: 'panel' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: ' 1/3 · 33%', in: 'panel' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'T1 Refresh', in: 'panel' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'aguarda T1', in: 'panel' })).toBeDefined()
+  await ui.advance(80)
+  expect((await badge())?.text).toBe(' ⠙ Executando ')
+  await ui.resize({ columns: 12, rows: 30, in: 'panel' })
+  expect(await badge()).toBeDefined()
   await ui.unmount()
 })
 
@@ -133,8 +139,8 @@ test('/sp status and /sp sync', async ($, on) => {
   expect(sync.text).toBe('Superpowers: sincronizado.')
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
   expect(status.text?.split('\n')[0]).toBe('Fase: —')
-  expect(status.text).toContain('PLANO ATUAL')
-  expect(status.text).toContain('  · 2026-10-03-auth.md  ███░░░░░░░ 1/3')
+  expect(status.text).toContain('Próximas')
+  expect(status.text).toContain('  · 2026-10-03-auth.md  1/3')
   expect(status.text).toContain('  · 2026-09-02-hotfix.md  sem tasks.json')
   const usage = await $.command.run({ ...RUN, command: 'sp', args: 'xyz' })
   expect(usage.text).toBe('Uso: /sp (abre/fecha o painel) · /sp status · /sp sync')
@@ -145,7 +151,7 @@ test('TaskList denied during backfill flags a partial sync', async ($, on) => {
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
-  expect(status.text).toContain('sincronização parcial')
+  expect(status.text).toContain('⚠ Algumas tarefas não puderam ser lidas — /sp sync')
 })
 
 test('session without the TaskList tool does not flag a partial sync', async ($, on) => {
@@ -153,35 +159,50 @@ test('session without the TaskList tool does not flag a partial sync', async ($,
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const status = await $.command.run({ ...RUN, command: 'sp', args: 'status' })
-  expect(status.text).not.toContain('sincronização parcial')
+  expect(status.text).not.toContain('Algumas tarefas')
 })
 
-test('clicking a plan opens DETALHE; ✕ fechar removes it', async ($, on) => {
+test('clicking a plan opens its detail card; ✕ fechar removes it', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
   await settle()
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const key = 'plan:docs/superpowers/plans/2026-10-03-auth.md'
-  expect((await ui.find({ key }))?.text).toBe('  · 2026-10-03-auth.md  ███░░░░░░░ 1/3')
-  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
+  const specLine = () => ui.find({ type: 'Text', text: /^Spec:/, in: 'panel' })
+  expect((await ui.find({ key, in: 'panel' }))?.text).toBe('  · 2026-10-03-auth.md  1/3')
+  expect(await specLine()).toBeUndefined()
 
   await ui.press({ key })
   await settle()
-  expect((await ui.find({ type: 'Text', text: 'DETALHE' }))?.text).toBe('DETALHE')
-  expect((await ui.find({ type: 'Text', text: /^Spec:/ }))?.text).toBe('Spec: 2026-10-01-auth-design.md')
-  expect((await ui.find({ type: 'Text', text: /T1 Refresh/ }))?.text).toBe('○ T1 Refresh')
-  expect((await ui.find({ type: 'Text', text: /T0 Login/ }))?.text).toBe('✓ T0 Login')
+  expect((await specLine())?.text).toBe('Spec: 2026-10-01-auth-design.md')
+  expect(await ui.find({ type: 'Text', text: 'T0 Login', in: 'panel' })).toBeDefined()
 
   await ui.press({ key: 'detail-close' })
   await settle()
-  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
+  expect(await specLine()).toBeUndefined()
 
   await ui.press({ key })
   await settle()
-  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeDefined()
+  expect(await specLine()).toBeDefined()
   await ui.press({ key })
   await settle()
-  expect(await ui.find({ type: 'Text', text: 'DETALHE' })).toBeUndefined()
+  expect(await specLine()).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the done group expands; an unknown panel message changes nothing', async ($, on) => {
+  engine(on, { tasks: [{ id: '3', subject: 'Task 0: Login', status: 'completed', blockedBy: [] }] })
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ key: 'done', in: 'panel' }))?.text).toBe('▸ ✓ 1 concluída')
+  await ui.press({ key: 'done' })
+  await settle()
+  expect((await ui.find({ key: 'done', in: 'panel' }))?.text).toBe('▾ ✓ 1 concluída')
+  expect(await ui.find({ type: 'Text', text: 'T0 Login', in: 'panel' })).toBeDefined()
+  await ui.post({ action: 'bogus', key: 'done' }, { in: 'panel' })
+  await settle()
+  expect((await ui.find({ key: 'done', in: 'panel' }))?.text).toBe('▾ ✓ 1 concluída')
   await ui.unmount()
 })
 
@@ -210,7 +231,7 @@ test('classic.FileChanged in docs/superpowers rescans (another session finished 
     await settle()
     text = (await $.command.run({ ...RUN, command: 'sp', args: 'status' })).text ?? ''
   }
-  expect(text).toContain('✓ 1 plano(s) concluído(s)\n  · 2026-10-03-auth.md  ██████████ 3/3')
+  expect(text).toContain('✓ 1 plano concluído\n  · 2026-10-03-auth.md  3/3')
 })
 
 test('classic.FileChanged outside docs/superpowers does not rescan', async ($, on) => {
@@ -237,7 +258,19 @@ test('a plan that is both incomplete and without spec keeps one key per list', a
   await settle()
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const hotfix = 'docs/superpowers/plans/2026-09-02-hotfix.md'
-  expect((await ui.find({ key: `plan:${hotfix}` }))?.text).toBe('  · 2026-09-02-hotfix.md  sem tasks.json')
-  expect((await ui.find({ key: `nospec:${hotfix}` }))?.text).toBe('  · 2026-09-02-hotfix.md')
+  expect((await ui.find({ key: `plan:${hotfix}`, in: 'panel' }))?.text).toBe('  · 2026-09-02-hotfix.md  sem tasks.json')
+  expect((await ui.find({ key: `nospec:${hotfix}`, in: 'panel' }))?.text).toBe('  · 2026-09-02-hotfix.md')
   await ui.unmount()
+})
+
+test('a surface without Client draws the text view', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  await settle()
+  for (const surface of ['vscode', 'mobile'] as const) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect((await ui.find({ type: 'Text', text: /^Fase:/ }))?.text).toBe('Fase: —')
+    expect(await ui.find({ type: 'Text', text: '  · 2026-10-03-auth.md  1/3' })).toBeDefined()
+    await ui.unmount()
+  }
 })

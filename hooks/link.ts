@@ -6,7 +6,6 @@ export type PlanView = Plan & {
   done: number
   total: number
   isComplete: boolean
-  label?: string
 }
 
 export type Derived = {
@@ -70,14 +69,6 @@ export const groupTasks = (tasks: readonly PlanTask[]): TaskGroups => ({
   done: tasks.filter(task => task.status === 'completed'),
 })
 
-const TASKS_FILE_LABEL: Record<Plan['tasksFile'], string | undefined> = {
-  ok: undefined,
-  missing: 'sem tasks.json',
-  invalid: 'tasks.json inválido',
-}
-
-const labelOf = (plan: Plan): string | undefined => TASKS_FILE_LABEL[plan.tasksFile]
-
 export const derive = (project: Project, live: Live): Derived => {
   const activePath = activePlanPath(project.plans, live)
   const views: PlanView[] = project.plans.map(plan => {
@@ -90,7 +81,6 @@ export const derive = (project: Project, live: Live): Derived => {
       done,
       total: tasks.length,
       isComplete: plan.tasksFile === 'ok' && tasks.length > 0 && done === tasks.length,
-      label: labelOf(plan),
     }
   })
   const linked = new Set(views.flatMap(view => (view.spec ? [view.spec.path] : [])))

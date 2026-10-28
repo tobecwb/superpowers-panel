@@ -50,7 +50,7 @@ test('derive classifies the project alerts', async () => {
   const derived = derive(project, EMPTY)
   expect(derived.specsWithoutPlan.map(s => s.slug)).toEqual(['billing'])
   expect(derived.incomplete.map(p => p.slug)).toEqual(['auth', 'miss', 'empty'])
-  expect(derived.incomplete.find(p => p.slug === 'miss')?.label).toBe('sem tasks.json')
+  expect(derived.incomplete.find(p => p.slug === 'miss')?.tasksFile).toBe('missing')
   expect(derived.withoutSpec.map(p => p.slug)).toEqual(['hotfix', 'miss', 'empty'])
   expect(derived.complete.map(p => p.slug)).toEqual(['hotfix'])
   expect(derived.active).toBeUndefined()
