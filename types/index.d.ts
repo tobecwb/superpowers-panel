@@ -40,6 +40,10 @@ export type Live = {
   syncNote?: string
 }
 
+export type Locale = 'pt-BR' | 'en'
+
+export type LocaleChoice = Locale | 'auto'
+
 declare module 'claude-code' {
   interface PluginState {
     'superpowers-panel': {
