@@ -33,7 +33,15 @@ back to detection.
     bun run check      # typecheck + lint + dead code + comment language + tests
     bun run fix        # applies Biome formatting and safe fixes
 
-Code conventions are in [`CLAUDE.md`](CLAUDE.md).
+Code conventions are in [`CLAUDE.md`](CLAUDE.md). `main` only takes pull requests; CI runs
+`bun run check` on every one.
+
+### Releasing
+
+Bump `version` in `.claude-plugin/plugin.json` in a pull request. The `release` workflow fails the
+PR if the version is below the latest release, and on merge it creates the
+`superpowers-panel--v<version>` tag and a GitHub Release. A PR that keeps the version releases
+nothing. `bun run release:check` shows what a merge would do.
 
 ## License
 
