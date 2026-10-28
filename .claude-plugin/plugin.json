@@ -1,6 +1,6 @@
 {
   "name": "superpowers-panel",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Live panel for the superpowers-extended-cc workflow: tasks, plans and specs",
   "author": { "name": "tobecwb", "url": "https://github.com/tobecwb" },
   "license": "MIT",
