@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "superpowers-panel",
-      "source": "./",
+      "source": { "source": "github", "repo": "tobecwb/superpowers-panel" },
       "description": "Live panel for the superpowers-extended-cc workflow: tasks, plans and specs"
     }
   ]
