@@ -22,6 +22,7 @@ const LABELS: PanelModel['labels'] = {
   emptyProject: '-',
   noFlow: '-',
   close: '✕',
+  scrollHint: '↓',
   noData: '-',
 }
 

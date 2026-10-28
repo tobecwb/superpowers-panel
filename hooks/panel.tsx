@@ -15,6 +15,7 @@ import { fitName } from './fit'
 import type { PanelAction } from './panel-action'
 import {
   type Detail,
+  type DoneGroup,
   KIND_ICON,
   type PanelModel,
   type Row,
@@ -23,7 +24,13 @@ import {
   type SectionItem,
 } from './view-model'
 
-type Draw = { elements: ClientElements; motion: Motion; columns: number; send: (action: PanelAction) => void }
+type Draw = {
+  elements: ClientElements
+  motion: Motion
+  columns: number
+  rows: number
+  send: (action: PanelAction) => void
+}
 
 // The region reports 0 columns before its first layout.
 const FALLBACK_COLUMNS = 40
@@ -141,19 +148,23 @@ const nowRows = (draw: Draw): RenderElement[] => [
   ...draw.motion.flashes.map(flash => rowView(draw, flash.row, flash.ticksLeft)),
 ]
 
+const doneToggle = (draw: Draw, done: DoneGroup, key: string): RenderElement => (
+  <draw.elements.Button
+    key={key}
+    label={`${arrow(done.expanded)} ${KIND_ICON.done} ${done.label}`}
+    onPress={() => draw.send({ action: 'toggle', key })}
+    plain
+    dimColor
+  />
+)
+
 const doneView = (draw: Draw): RenderElement | false => {
-  const { Box, Button } = draw.elements
+  const { Box } = draw.elements
   const done = draw.motion.model.done
   return (
     done !== undefined && (
       <Box flexDirection="column" marginTop={1}>
-        <Button
-          key="done"
-          label={`${arrow(done.expanded)} ${KIND_ICON.done} ${done.label}`}
-          onPress={() => draw.send({ action: 'toggle', key: 'done' })}
-          plain
-          dimColor
-        />
+        {doneToggle(draw, done, 'done')}
         {withoutFlashing(draw.motion, done.rows).map(row => rowView(draw, row))}
       </Box>
     )
@@ -251,11 +262,21 @@ const projectView = (draw: Draw): RenderElement => {
   )
 }
 
-// The title shares its line with the progress note, one cell apart.
-const detailTitleWidth = (columns: number, detail: Detail): number => columns - CARD_CHROME - 1 - detail.note.length
+const CLOSE_MARK = '✕'
+
+// The title shares its line with the progress note and the close mark, one cell apart each.
+const detailTitleWidth = (columns: number, detail: Detail): number =>
+  columns - CARD_CHROME - 1 - detail.note.length - 1 - CLOSE_MARK.length
+
+// The engine draws no scrollbar on a pane: without this a card running past the window looks cut.
+const isTallerThanPane = (draw: Draw): boolean => {
+  const bodyRows = draw.motion.model.bodyRows
+  return bodyRows !== undefined && draw.rows > bodyRows
+}
 
 const detailView = (draw: Draw, detail: Detail): RenderElement => {
   const { Box, Text, Button } = draw.elements
+  const { labels } = draw.motion.model
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="subtle" paddingX={1} marginTop={1}>
       <Box gap={1}>
@@ -263,17 +284,23 @@ const detailView = (draw: Draw, detail: Detail): RenderElement => {
           {fitName({ full: detail.title, short: detail.shortTitle, width: detailTitleWidth(draw.columns, detail) })}
         </Text>
         <Text dimColor>{detail.note}</Text>
+        <Box flexGrow={1} />
+        <Button
+          key="detail-close"
+          label={labels.close}
+          onPress={() => draw.send({ action: 'select', key: detail.path })}
+          plain
+        >
+          {CLOSE_MARK}
+        </Button>
       </Box>
       <Text dimColor wrap="truncate-end">
         {detail.specLine}
       </Text>
+      {isTallerThanPane(draw) && <Text dimColor>{labels.scrollHint}</Text>}
       {detail.rows.map(row => rowView(draw, row))}
-      <Button
-        key="detail-close"
-        label={draw.motion.model.labels.close}
-        onPress={() => draw.send({ action: 'select', key: detail.path })}
-        plain
-      />
+      {detail.done && doneToggle(draw, detail.done, 'detail-done')}
+      {detail.done?.rows.map(row => rowView(draw, row))}
     </Box>
   )
 }
@@ -285,6 +312,7 @@ const panelView = (draw: Draw): RenderElement => {
   return (
     <Box flexDirection="column">
       {headerView(draw)}
+      {model.detail && detailView(draw, model.detail)}
       {rowsSection(draw, model.labels.now, nowRows(draw))}
       {rowsSection(
         draw,
@@ -298,7 +326,6 @@ const panelView = (draw: Draw): RenderElement => {
         model.outside.map(row => rowView(draw, row)),
       )}
       {projectView(draw)}
-      {model.detail && detailView(draw, model.detail)}
     </Box>
   )
 }
@@ -317,6 +344,7 @@ export const Panel: ClientModule<JsonValue, Motion> = (props, surface) => {
     elements: surface.elements,
     motion,
     columns: surface.columns || FALLBACK_COLUMNS,
+    rows: surface.rows,
     send: action => surface.post(action),
   })
 }

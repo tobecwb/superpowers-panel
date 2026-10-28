@@ -17,6 +17,7 @@ export const en: Messages = {
     emptyProject: 'No specs or plans yet.',
     noFlow: 'No active flow',
     close: '✕ close',
+    scrollHint: '↓ scroll for more',
     noData: 'No superpowers data in this project.',
   },
   phases: {

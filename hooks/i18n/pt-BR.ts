@@ -16,6 +16,7 @@ export const ptBR = {
     emptyProject: 'Nenhuma spec ou plano ainda.',
     noFlow: 'Nenhum fluxo ativo',
     close: '✕ fechar',
+    scrollHint: '↓ role para ver mais',
     noData: 'Nenhum dado superpowers neste projeto.',
   },
   phases: {
