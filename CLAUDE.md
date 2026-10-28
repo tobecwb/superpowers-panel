@@ -1,6 +1,6 @@
 # superpowers-panel
 
-Mod de function hooks para Claude Code. Veja o README para uso.
+Function-hooks mod for Claude Code. See the README for usage.
 
 ## Code conventions
 

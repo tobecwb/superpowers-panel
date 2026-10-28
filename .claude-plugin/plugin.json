@@ -1,7 +1,7 @@
 {
   "name": "superpowers-panel",
   "version": "0.1.0",
-  "description": "Painel ao vivo do fluxo superpowers-extended-cc: tarefas, planos e specs",
+  "description": "Live panel for the superpowers-extended-cc workflow: tasks, plans and specs",
   "author": { "name": "tobecwb", "url": "https://github.com/tobecwb" },
   "license": "MIT",
   "homepage": "https://github.com/tobecwb/superpowers-panel",

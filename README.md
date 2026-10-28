@@ -1,32 +1,40 @@
 # superpowers-panel
 
-Mod para Claude Code que mostra, num painel lateral animado, o fluxo do
-[superpowers-extended-cc](https://github.com/pcvelz/superpowers):
+A Claude Code mod that shows the
+[superpowers-extended-cc](https://github.com/pcvelz/superpowers) workflow in an animated side panel:
 
-- cartão com a fase atual (skill superpowers ativa), o plano em execução e o progresso;
-- **Agora** (tarefas em andamento e as que aguardam você), **Próximas** e concluídas;
-- tarefas da sessão fora do plano;
-- specs sem plano, planos incompletos, planos sem spec e planos concluídos — clique num plano para
-  ver o detalhe.
+- a card with the current phase (the active superpowers skill), the plan being executed and its progress;
+- **Now** (tasks in progress and the ones waiting on you), **Up next** and done;
+- session tasks outside the plan;
+- specs without a plan, incomplete plans, plans without a spec and completed plans — click a plan
+  to see its details.
 
-## Uso
+The panel speaks English and Brazilian Portuguese.
 
-    claude --plugin-dir /caminho/para/superpowers-mod
+## Usage
 
-O painel abre sozinho em projetos com `docs/superpowers/`.
+    git clone https://github.com/tobecwb/superpowers-panel.git
+    claude --plugin-dir /path/to/superpowers-panel
 
-- `/sp` — abre/fecha o painel
-- `/sp status` — resumo em texto
-- `/sp sync` — relê o projeto e as tarefas da sessão
-- `/sp lang [pt-BR|en|auto]` — mostra ou fixa o idioma
+The panel opens on its own in projects that have a `docs/superpowers/` folder.
 
-O idioma (pt-BR ou en) segue a configuração `language` do Claude Code; sem ela, a variável `LANG`;
-sem nenhuma das duas, inglês. `/sp lang` fixa uma escolha e `/sp lang auto` volta à detecção.
+- `/sp` — toggle the panel
+- `/sp status` — text summary
+- `/sp sync` — re-read the project and the session tasks
+- `/sp lang [pt-BR|en|auto]` — show or set the language
 
-## Desenvolvimento
+The language (pt-BR or en) follows Claude Code's `language` setting; without it, the `LANG`
+environment variable; without either, English. `/sp lang` pins a choice and `/sp lang auto` goes
+back to detection.
 
-    bun install        # instala as ferramentas e liga o pre-commit
-    bun run check      # typecheck + lint + código morto + comentários + testes
-    bun run fix        # aplica formatação e correções automáticas do Biome
+## Development
 
-Convenções de código em [`CLAUDE.md`](CLAUDE.md).
+    bun install        # installs the tools and enables the pre-commit hook
+    bun run check      # typecheck + lint + dead code + comment language + tests
+    bun run fix        # applies Biome formatting and safe fixes
+
+Code conventions are in [`CLAUDE.md`](CLAUDE.md).
+
+## License
+
+[MIT](LICENSE)
