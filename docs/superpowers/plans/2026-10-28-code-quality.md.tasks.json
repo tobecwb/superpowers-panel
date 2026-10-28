@@ -55,7 +55,7 @@
     {
       "id": 6,
       "subject": "Task 6: Detector de comentários em português",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Criar `scripts/comment-language.ts` (detecção pura, via TypeScript compiler API) e `scripts/check-comments.ts` (varredura e saída), com testes `bun:test` em `.spec.ts`, e ligar ambos aos scripts `typecheck`, `test` e `comments`.\n\n**Files:**\n- Create: `scripts/comment-language.ts`, `scripts/check-comments.ts`, `scripts/comment-language.spec.ts`, `scripts/tsconfig.json`\n- Modify: `package.json`, `knip.json`, `bun.lock`\n\n**Acceptance Criteria:**\n- [ ] `bun test ./scripts` passa os 6 testes de `scripts/comment-language.spec.ts`\n- [ ] `claude plugin test .` continua com `50 pass` (não coleta o `.spec.ts`)\n- [ ] `bun run typecheck` cobre `tsconfig.json` e `scripts/tsconfig.json` e sai com código 0\n- [ ] `bun run comments` sai com código 1 e lista os comentários em português que ainda existem em `hooks/`, `types/` e `tests/`, no formato `arquivo:linha: comentário`\n- [ ] `bun run deadcode` e `bun run lint` saem com código 0\n\n**Verify:** `bun test ./scripts && bun run typecheck && bun run deadcode && bun run lint; bun run comments; echo \"exit=$?\"` → 6 pass, sem erros, lista de comentários e `exit=1`\n\n```json:metadata\n{\"files\": [\".spec.ts\", \"bun.lock\", \"knip.json\", \"package.json\", \"scripts/check-comments.ts\", \"scripts/comment-language.spec.ts\", \"scripts/comment-language.ts\", \"scripts/tsconfig.json\"], \"verifyCommand\": \"bun test ./scripts && bun run typecheck && bun run deadcode && bun run lint; bun run comments; echo \\\"exit=$?\\\"\", \"acceptanceCriteria\": [\"`bun test ./scripts` passa os 6 testes de `scripts/comment-language.spec.ts`\", \"`claude plugin test .` continua com `50 pass` (não coleta o `.spec.ts`)\", \"`bun run typecheck` cobre `tsconfig.json` e `scripts/tsconfig.json` e sai com código 0\", \"`bun run comments` sai com código 1 e lista os comentários em português que ainda existem em `hooks/`, `types/` e `tests/`, no formato `arquivo:linha: comentário`\", \"`bun run deadcode` e `bun run lint` saem com código 0\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         5
@@ -80,5 +80,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T11:33:04-03:00"
+  "lastUpdated": "2026-10-28T11:36:56-03:00"
 }
