@@ -1,0 +1,6 @@
+{
+  "name": "superpowers-panel",
+  "version": "0.1.0",
+  "description": "Painel ao vivo do fluxo superpowers-extended-cc: tarefas, planos e specs",
+  "types": "./types/index.d.ts"
+}
