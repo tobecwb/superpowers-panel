@@ -108,21 +108,25 @@ const phaseBadge = (draw: Draw): RenderElement => {
   )
 }
 
-// Widths in percent instead of counted glyphs, so the bar fills the line in any font.
+// Widths in percent instead of counted glyphs, so the bar fills the line in any font. The
+// desktop starts a flex item at its content's width and shrinks it in proportion: the glyph
+// runs start at width 0 and grow, or they would crush the suffix and the done share.
 const desktopProgressView = (draw: Draw, plan: { total: number }, suffix: string): RenderElement => {
   const { Box, Text } = draw.elements
   const glyphs = '━'.repeat(DESKTOP_BAR_GLYPHS)
   return (
-    <Box>
-      <Box flexGrow={1} height={1} overflow="hidden">
-        <Box width={`${percent(draw.motion.shownDone, plan.total)}%`} overflow="hidden">
+    <Box gap={1}>
+      <Box key="bar-track" width={0} flexGrow={1} height={1} overflow="hidden">
+        <Box key="bar-done" width={`${percent(draw.motion.shownDone, plan.total)}%`} flexShrink={0} overflow="hidden">
           <Text color="success">{glyphs}</Text>
         </Box>
-        <Box flexGrow={1} overflow="hidden">
+        <Box key="bar-left" width={0} flexGrow={1} overflow="hidden">
           <Text color="subtle">{glyphs}</Text>
         </Box>
       </Box>
-      <Text dimColor>{suffix}</Text>
+      <Box key="bar-suffix" flexShrink={0}>
+        <Text dimColor>{suffix.trim()}</Text>
+      </Box>
     </Box>
   )
 }

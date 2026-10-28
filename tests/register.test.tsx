@@ -488,3 +488,27 @@ test('the progress bar fits the region width instead of following its content', 
   expect(used).toBeLessThanOrEqual(30 - 4)
   await ui.unmount()
 })
+
+// The desktop starts a flex item at its content's width and shrinks in proportion to it:
+// a track sized by its glyphs crushes the suffix and the done share to almost nothing.
+test('on the desktop the progress bar starts at no width, so the suffix and the done share keep theirs', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  await settle()
+  await $.tool.call({
+    tool: 'Skill',
+    skill: 'superpowers-extended-cc:executing-plans',
+    args: 'docs/superpowers/plans/2026-10-03-auth.md',
+  })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const track = await ui.find({ key: 'bar-track', in: 'panel' })
+  const done = await ui.find({ key: 'bar-done', in: 'panel' })
+  const left = await ui.find({ key: 'bar-left', in: 'panel' })
+  const suffix = await ui.find({ key: 'bar-suffix', in: 'panel' })
+  expect(track?.props).toMatchObject({ width: 0, flexGrow: 1, height: 1, overflow: 'hidden' })
+  expect(done?.props).toMatchObject({ flexShrink: 0, width: expect.stringMatching(/^\d+%$/) })
+  expect(left?.props).toMatchObject({ width: 0, flexGrow: 1 })
+  expect(suffix?.props).toMatchObject({ flexShrink: 0 })
+  expect(suffix?.text).toMatch(/\d+\/\d+ · \d+%/)
+  await ui.unmount()
+})
