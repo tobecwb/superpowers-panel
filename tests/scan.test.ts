@@ -77,3 +77,10 @@ test('coalesce serializa e junta pedidos', async () => {
   await Promise.all([a, b, c])
   expect(runs).toBe(2)
 })
+
+test('tasks.json maior que 4 MiB é inválido', async () => {
+  const big = `{"tasks": [], "pad": "${'x'.repeat(4 * 1024 * 1024 + 1)}"}`
+  const project = await scanProject(fakeFs({ [`${P}/plans/2026-01-06-big.md`]: '# b', [`${P}/plans/2026-01-06-big.md.tasks.json`]: big }), '/r', 1)
+  expect(project.plans[0]?.tasksFile).toBe('invalid')
+  expect(project.plans[0]?.tasks).toEqual([])
+})

@@ -8,6 +8,7 @@ export type FsLike = {
 }
 
 const ROOT_DIR = 'docs/superpowers'
+const MAX_TASKS_BYTES = 4 * 1024 * 1024
 const SPECS = `${ROOT_DIR}/specs`
 const PLANS = `${ROOT_DIR}/plans`
 
@@ -30,7 +31,7 @@ const readPlan = async (fs: FsLike, root: string, name: string): Promise<Plan> =
   let tasksFile: Plan['tasksFile'] = 'missing'
   let tasks: PlanTask[] = []
   if (await fs.exists(tasksPath)) {
-    const parsed = await fs.read(tasksPath).then(parseTasksFile, () => undefined)
+    const parsed = await fs.read(tasksPath).then(raw => (raw.length > MAX_TASKS_BYTES ? undefined : parseTasksFile(raw)), () => undefined)
     tasksFile = parsed ? 'ok' : 'invalid'
     tasks = parsed ?? []
   }
