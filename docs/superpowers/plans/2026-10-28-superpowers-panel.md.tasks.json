@@ -4,13 +4,13 @@
     {
       "id": 0,
       "subject": "Task 0: Scaffold do mod, contrato de estado e parsers",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Criar o esqueleto do plugin, o contrato de tipos do `$.state` e `hooks/parse.ts` com testes.\n\n**Files:**\n- Create: `.claude-plugin/plugin.json`, `hooks/hooks.json`, `tsconfig.json`, `.gitignore`, `types/index.d.ts`, `hooks/parse.ts`, `hooks/register.tsx` (stub), `tests/parse.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `claude plugin validate .` sai com código 0\n- [ ] `claude plugin test .` passa todos os testes de `tests/parse.test.ts`\n- [ ] `npx -y -p typescript@5.6.3 tsc -p .` sem erros\n\n**Verify:** `claude plugin test . && claude plugin validate . && npx -y -p typescript@5.6.3 tsc -p .` → testes passam, validate sem erros, tsc sem saída\n\n```json:metadata\n{\"files\": [\"hooks/parse.ts\", \"types/index.d.ts\", \".claude-plugin/plugin.json\", \"hooks/hooks.json\", \"tsconfig.json\", \"tests/parse.test.ts\"], \"verifyCommand\": \"claude plugin test . && claude plugin validate . && npx -y -p typescript@5.6.3 tsc -p .\", \"acceptanceCriteria\": [\"`claude plugin validate .` sai com código 0\", \"`claude plugin test .` passa todos os testes de `tests/parse.test.ts`\", \"`npx -y -p typescript@5.6.3 tsc -p .` sem erros\"], \"modelTier\": \"standard\"}\n```"
     },
     {
       "id": 1,
       "subject": "Task 1: Ligação spec↔plano, alertas e plano ativo (`link.ts`)",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Implementar a derivação pura dos alertas do projeto, do plano ativo e da precedência de status.\n\n**Files:**\n- Create: `hooks/link.ts`, `tests/link.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `derive` classifica specs sem plano, planos incompletos, sem spec e concluídos conforme a spec\n- [ ] `**Spec:**` com `./` ou só nome de arquivo liga à spec; referência inexistente marca `specMissing`\n- [ ] No plano ativo, status nativo prevalece sobre o do `.tasks.json`; tarefas nativas sem correspondência ficam em `outside`\n- [ ] `groupTasks` separa em andamento / pendentes / bloqueadas / concluídas, ignorando `blockedBy` inexistente\n\n**Verify:** `claude plugin test .` → todos os testes de `tests/link.test.ts` passam\n\n```json:metadata\n{\"files\": [\"hooks/link.ts\", \"tests/link.test.ts\"], \"verifyCommand\": \"claude plugin test .\", \"acceptanceCriteria\": [\"`derive` classifica specs sem plano, planos incompletos, sem spec e concluídos conforme a spec\", \"`**Spec:**` com `./` ou só nome de arquivo liga à spec; referência inexistente marca `specMissing`\", \"No plano ativo, status nativo prevalece sobre o do `.tasks.json`; tarefas nativas sem correspondência ficam em `outside`\", \"`groupTasks` separa em andamento / pendentes / bloqueadas / concluídas, ignorando `blockedBy` inexistente\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         0
@@ -19,7 +19,7 @@
     {
       "id": 2,
       "subject": "Task 2: Estado ao vivo da sessão e replay do transcript (`live.ts`)",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Implementar a aplicação pura de eventos (TaskCreate/TaskUpdate/Skill/arquivos/TaskList) sobre `Live` e o replay do transcript.\n\n**Files:**\n- Create: `hooks/live.ts`, `tests/live.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `toolEvent` converte TaskCreate (id do resultado), TaskUpdate, Skill e Read/Write/Edit em eventos; outras ferramentas → `undefined`\n- [ ] `applyEvent` cria, atualiza, remove (`deleted`) tarefas; `skill` de outro plugin não altera a fase\n- [ ] `executing-plans`/`subagent-driven-development` com caminho de plano em `args`, ou toque em `.tasks.json`, definem `activePlan`\n- [ ] `snapshot` (TaskList) substitui `sessionTasks`\n- [ ] `replay` reconstrói tarefas e fase a partir de `SessionMessage[]`, inclusive skill digitada pelo usuário\n\n**Verify:** `claude plugin test .` → todos os testes de `tests/live.test.ts` passam\n\n```json:metadata\n{\"files\": [\"hooks/live.ts\", \"tests/live.test.ts\"], \"verifyCommand\": \"claude plugin test .\", \"acceptanceCriteria\": [\"`toolEvent` converte TaskCreate (id do resultado), TaskUpdate, Skill e Read/Write/Edit em eventos; outras ferramentas → `undefined`\", \"`applyEvent` cria, atualiza, remove (`deleted`) tarefas; `skill` de outro plugin não altera a fase\", \"`executing-plans`/`subagent-driven-development` com caminho de plano em `args`, ou toque em `.tasks.json`, definem `activePlan`\", \"`snapshot` (TaskList) substitui `sessionTasks`\", \"`replay` reconstrói tarefas e fase a partir de `SessionMessage[]`, inclusive skill digitada pelo usuário\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         0
@@ -28,7 +28,7 @@
     {
       "id": 3,
       "subject": "Task 3: Varredura de `docs/superpowers/` (`scan.ts`)",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Ler specs, planos e `.tasks.json` por uma interface de arquivos injetável e serializar varreduras concorrentes.\n\n**Files:**\n- Create: `hooks/scan.ts`, `tests/scan.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Sem `docs/superpowers/` → `hasSuperpowersDir: false`, listas vazias\n- [ ] Com `docs/superpowers/` sem `specs/` ou `plans/` → listas vazias, sem exceção\n- [ ] Plano com `.tasks.json` válido → `tasksFile: 'ok'`; inválido ou ilegível → `'invalid'`; ausente → `'missing'`\n- [ ] `*.md.tasks.json` não aparece como plano; `specRef` lido do cabeçalho\n- [ ] `coalesce` executa no máximo uma vez em paralelo e roda de novo uma única vez se pedido durante a execução\n\n**Verify:** `claude plugin test .` → todos os testes de `tests/scan.test.ts` passam\n\n```json:metadata\n{\"files\": [\"hooks/scan.ts\", \"tests/scan.test.ts\"], \"verifyCommand\": \"claude plugin test .\", \"acceptanceCriteria\": [\"Sem `docs/superpowers/` → `hasSuperpowersDir: false`, listas vazias\", \"Com `docs/superpowers/` sem `specs/` ou `plans/` → listas vazias, sem exceção\", \"Plano com `.tasks.json` válido → `tasksFile: 'ok'`; inválido ou ilegível → `'invalid'`; ausente → `'missing'`\", \"`*.md.tasks.json` não aparece como plano; `specRef` lido do cabeçalho\", \"`coalesce` executa no máximo uma vez em paralelo e roda de novo uma única vez se pedido durante a execução\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         0
@@ -37,7 +37,7 @@
     {
       "id": 4,
       "subject": "Task 4: Formatação de linhas e resumo em texto (`summary.ts`)",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Implementar os textos compartilhados pelo painel e por `/sp status`.\n\n**Files:**\n- Create: `hooks/summary.ts`, `tests/summary.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `taskLine` gera `▶ T8 X  em andamento`, `○ T9 X  🔒 user-gate`, `⊘ T10 X  bloqueada por T9`, `✓ T1 X`, removendo o prefixo `Task N: `\n- [ ] `bar(7, 9)` gera barra de 10 células `███████░░░` proporcional; `bar(0, 0)` só células vazias\n- [ ] `summarize` produz fase, plano ativo com progresso, grupos do plano, fora do plano e os quatro blocos do projeto; sem dados → `Nenhum dado superpowers neste projeto.`\n\n**Verify:** `claude plugin test .` → todos os testes de `tests/summary.test.ts` passam\n\n```json:metadata\n{\"files\": [\"hooks/summary.ts\", \"tests/summary.test.ts\"], \"verifyCommand\": \"claude plugin test .\", \"acceptanceCriteria\": [\"`taskLine` gera `▶ T8 X  em andamento`, `○ T9 X  🔒 user-gate`, `⊘ T10 X  bloqueada por T9`, `✓ T1 X`, removendo o prefixo `Task N: `\", \"`bar(7, 9)` gera barra de 10 células `███████░░░` proporcional; `bar(0, 0)` só células vazias\", \"`summarize` produz fase, plano ativo com progresso, grupos do plano, fora do plano e os quatro blocos do projeto; sem dados → `Nenhum dado superpowers neste projeto.`\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         1
@@ -46,7 +46,7 @@
     {
       "id": 5,
       "subject": "Task 5: Painel, atoms e ligação dos eventos (`register.tsx`)",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Ligar todos os eventos do engine ao estado e desenhar o painel `Superpowers`, com teste de mod ponta a ponta.\n\n**Files:**\n- Create: `hooks/atoms.ts`, `hooks/pane.tsx`, `tests/register.test.tsx`\n- Modify: `hooks/register.tsx` (substitui o stub inteiro)\n\n**Acceptance Criteria:**\n- [ ] `session.start` registra `/sp`, varre o projeto, faz backfill (replay + TaskList) e abre o pane quando há `docs/superpowers/`\n- [ ] `TaskCreate`/`TaskUpdate`/`Skill`/`Read`/`Write`/`Edit` bem-sucedidos atualizam `live`; o resultado da ferramenta é devolvido inalterado\n- [ ] `Write`/`Edit` em `docs/superpowers/` e `turn.complete` disparam revarredura\n- [ ] `prompt.submit` com `/superpowers-extended-cc:<skill>` atualiza a fase\n- [ ] `/sp` alterna o pane; `/sp status` devolve `summarize`; `/sp sync` revarre + backfill; outro argumento devolve o uso\n- [ ] O pane mostra fase, plano ativo, tarefas, fora do plano e alertas; concluídas recolhidas com botão de expandir\n- [ ] Falha do `TaskList` no backfill grava `syncNote: 'sincronização parcial'`\n\n**Verify:** `claude plugin test . && claude plugin validate . && npx -y -p typescript@5.6.3 tsc -p .` → tudo passa\n\n```json:metadata\n{\"files\": [\"hooks/atoms.ts\", \"hooks/pane.tsx\", \"hooks/register.tsx\", \"tests/register.test.tsx\"], \"verifyCommand\": \"claude plugin test . && claude plugin validate . && npx -y -p typescript@5.6.3 tsc -p .\", \"acceptanceCriteria\": [\"`session.start` registra `/sp`, varre o projeto, faz backfill (replay + TaskList) e abre o pane quando há `docs/superpowers/`\", \"`TaskCreate`/`TaskUpdate`/`Skill`/`Read`/`Write`/`Edit` bem-sucedidos atualizam `live`; o resultado da ferramenta é devolvido inalterado\", \"`Write`/`Edit` em `docs/superpowers/` e `turn.complete` disparam revarredura\", \"`prompt.submit` com `/superpowers-extended-cc:<skill>` atualiza a fase\", \"`/sp` alterna o pane; `/sp status` devolve `summarize`; `/sp sync` revarre + backfill; outro argumento devolve o uso\", \"O pane mostra fase, plano ativo, tarefas, fora do plano e alertas; concluídas recolhidas com botão de expandir\", \"Falha do `TaskList` no backfill grava `syncNote: 'sincronização parcial'`\"], \"modelTier\": \"frontier\"}\n```",
       "blockedBy": [
         1,
@@ -65,5 +65,5 @@
       ]
     }
   ],
-  "lastUpdated": "2026-10-28T13:13:31.398143+00:00"
+  "lastUpdated": "2026-10-28T13:26:09.615016+00:00"
 }
